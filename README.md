@@ -18,19 +18,6 @@ void* vgsdec_create_context();
 - `!NULL` : context
 - `NULL` : error
 
-## Release Context
-#### prototyping
-```
-void vgsdec_release_context(void* context);
-```
-
-#### arguments
-- `context` : context
-
-#### return value
-- `!NULL` : context
-- `NULL` : error
-
 ## Load BGM data
 #### prototyping
 ```
@@ -65,3 +52,12 @@ void vgsdec_execute(void* context, void* buffer, size_t size);
   - sampling rate: 22050Hz
   - bit rate: 16bit
   - channels: 1 (monoral)
+
+## Release Context
+#### prototyping
+```
+void vgsdec_release_context(void* context);
+```
+
+#### arguments
+- `context` : context
