@@ -1,4 +1,4 @@
-# vgs-bgm-decoder
+# VGS BGM Decoder
 - decodes: `VGS's .BGM file` to `PCM`
 - platform free
 
@@ -6,7 +6,6 @@
 - Create Context
 - Load BGM data (from file or memory)
 = Decode
-- Unload BGM data
 - Release Context
 
 # API specification (draft)
@@ -36,13 +35,12 @@ void vgsdec_release_context(void* context);
 ## Load BGM data
 #### prototyping
 ```
-int vgsdec_load_bgm_from_file(void* context, int slot, const char* path);
-int vgsdec_load_bgm_from_memory(void* context, int slot, void* data, size_t size);
+int vgsdec_load_bgm_from_file(void* context, const char* path);
+int vgsdec_load_bgm_from_memory(void* context, void* data, size_t size);
 ```
 
 #### arguments
 - `context` : context
-- `slot` : number of slot ( `0` ~ `255` )
 - `path` : path of the BGM file
 - `data` : pointer of memory area that BGM file data stored.
 - `size` : size of the BGM file
@@ -51,15 +49,20 @@ int vgsdec_load_bgm_from_memory(void* context, int slot, void* data, size_t size
 - `0` : success
 - `-1` : failed
 
-#### Remarks
-- If you specified a loaded slot number already, these functions unload automatically old data and load new data.
-
-## Unload BGM data
+## Decode
 #### prototyping
 ```
-void vgsdec_unload(void* context, int slot);
+void vgsdec_execute(void* context, void* buffer, size_t size);
 ```
 
 #### arguments
 - `context` : context
-- `slot` : number of slot ( `0` ~ `255` )
+- `buffer` : stores decoded PCM data
+- `size` : size of buffer
+
+#### remarks
+- this function stores decoded PCM data to the buffer.
+- The format of the PCM are fixed by the following:
+  - sampling rate: 22050Hz
+  - bit rate: 16bit
+  - channels: 1 (monoral)
