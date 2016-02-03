@@ -63,3 +63,6 @@ void vgsdec_release_context(void* context);
 
 #### arguments
 - `context` : context
+
+## Context Specification
+_todo: I'll write later_
