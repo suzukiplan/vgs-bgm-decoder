@@ -5,7 +5,7 @@
 ## How to use (draft)
 - Create Context
 - Load BGM data (from file or memory)
-= Decode
+- Decode
 - Release Context
 
 ## Create Context
