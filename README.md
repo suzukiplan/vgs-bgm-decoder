@@ -8,7 +8,6 @@
 = Decode
 - Release Context
 
-# API specification (draft)
 ## Create Context
 #### prototyping
 ```
