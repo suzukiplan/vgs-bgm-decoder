@@ -52,6 +52,8 @@ void vgsdec_execute(void* context, void* buffer, size_t size);
   - sampling rate: 22050Hz
   - bit rate: 16bit
   - channels: 1 (monoral)
+- ex: 1 second = 44100 byte _(22050 * 16 * 1 / 8)_
+- use to sequentially call
 
 ## Release Context
 #### prototyping
