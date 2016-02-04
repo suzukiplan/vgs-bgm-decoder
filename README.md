@@ -102,6 +102,7 @@ void vgsdec_set_value(void* context, int type, int value);
 
 #### tone value
 |value|name|
+|---|---|
 |0|Sin wave|
 |1|Square ware|
 |2|Saw wave|
