@@ -63,7 +63,7 @@ struct _CONTEXT {
 #else
     pthread_mutex_t mt;
 #endif
-    struct _NOTE[MAX_NOTES] notes;
+    struct _NOTE notes[MAX_NOTES];
     unsigned char play;
     unsigned char mask;
     unsigned short mvol;
@@ -95,6 +95,6 @@ extern short* TONE4[85];
 static void reset_context(struct _CONTEXT* c);
 static void lock_context(struct _CONTEXT* c);
 static void unlock_context(struct _CONTEXT* c);
-static void set_note(unsigned char cn, unsigned char t, unsigned char n);
-static int get_next_note();
+static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsigned char n);
+static int get_next_note(struct _CONTEXT* c);
 void jump_time(struct _CONTEXT* c, int sec);

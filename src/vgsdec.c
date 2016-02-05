@@ -70,6 +70,7 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
 {
     struct _CONTEXT* c = (struct _CONTEXT*)context;
     uLong nblen;
+    int i;
 
     if (NULL == c || NULL == data) return -1;
     reset_context(c);
@@ -83,10 +84,10 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
     c->loopIdx = -1;
     for (i = 0; i < c->idxnum; i++) {
         if (NTYPE_WAIT == c->notes[i].type) {
-            c->notes.timeL += c->notes[i].val;
-        } else if (NTYPE_LABEL == _notebuf[i].type) {
-            c->notes.timeI = _psg.timeL;
-            c->loopIdx = _notebuf[i].val;
+            c->timeL += c->notes[i].val;
+        } else if (NTYPE_LABEL == c->notes[i].type) {
+            c->timeI = c->timeL;
+            c->loopIdx = c->notes[i].val;
         }
     }
     return 0;
@@ -96,6 +97,12 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
 {
     struct _CONTEXT* c = (struct _CONTEXT*)context;
     char* buf = (char*)buffer;
+    static int an;
+    int i, j;
+    int pw;
+    int wav;
+    int cs;
+    short* bp;
 
     if (NULL == c || NULL == buf) return;
     memset(buf, 0, size);
@@ -111,7 +118,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
             return; /* end fadeout */
         }
         if (0 == c->waitTime) {
-            c->waitTime = get_next_note();
+            c->waitTime = get_next_note(c);
             if (0 == c->waitTime) {
                 c->play = 0;
                 unlock_context(c);
@@ -172,7 +179,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                                 if (c->ch[j].toneK) {
                                     c->ch[j].toneK--;
                                 }
-                                set_note(j & 0xff, c->ch[j].toneT, c->ch[j].toneK);
+                                set_note(c, j & 0xff, c->ch[j].toneT, c->ch[j].toneK);
                             }
                         }
                     }
@@ -189,7 +196,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                 }
                 c->waitTime--;
                 if (0 == c->waitTime) {
-                    c->waitTime = get_next_note();
+                    c->waitTime = get_next_note(c);
                     if (0 == c->waitTime) {
                         unlock_context(c);
                         return; /* no data */
@@ -294,7 +301,7 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             if (0 <= value) jump_time(c, value);
             break;
         case VGSDEC_REG_FADEOUT:
-            if (value && 0 == c->fade2) c->fade2;
+            if (value && 0 == c->fade2) c->fade2 = 1;
             break;
         case VGSDEC_REG_RESET:
             if (value) reset_context(c);
@@ -352,18 +359,18 @@ static void reset_context(struct _CONTEXT* c)
 static void lock_context(struct _CONTEXT* c)
 {
 #ifdef _WIN32
-    EnterCriticalSection(&(result->cs);
+    EnterCriticalSection(&(c->cs);
 #else
-    pthread_mutex_lock(&(result->mt));
+    pthread_mutex_lock(&(c->mt));
 #endif
 }
 
 static void unlock_context(struct _CONTEXT* c)
 {
 #ifdef _WIN32
-    LeaveCriticalSection(&(result->cs);
+    LeaveCriticalSection(&(c->cs);
 #else
-    pthread_mutex_unlock(&(result->mt));
+    pthread_mutex_unlock(&(c->mt));
 #endif
 }
 
@@ -414,7 +421,7 @@ static int get_next_note(struct _CONTEXT* c)
                 c->ch[c->notes[c->nidx].op1].cur = 0;
                 c->ch[c->notes[c->nidx].op1].toneT = c->notes[c->nidx].op2;
                 c->ch[c->notes[c->nidx].op1].toneK = c->notes[c->nidx].op3;
-                set_note(c->notes[c->nidx].op1, c->notes[c->nidx].op2, c->notes[c->nidx].op3);
+                set_note(c, c->notes[c->nidx].op1, c->notes[c->nidx].op2, c->notes[c->nidx].op3);
                 break;
             case NTYPE_KEYOFF: /* op1=ch */
                 c->ch[c->notes[c->nidx].op1].keyOn = 0;
