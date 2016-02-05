@@ -20,11 +20,6 @@
 #include "vgsdec.h"
 #include "miniz.h"
 
-#define SAMPLE_RATE 22050
-#define SAMPLE_BITS 16
-#define SAMPLE_CH 1
-#define SAMPLE_BUFS 4410
-
 #define NTYPE_ENV1 1
 #define NTYPE_ENV2 2
 #define NTYPE_VOL 3
