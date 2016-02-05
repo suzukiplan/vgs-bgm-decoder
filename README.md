@@ -79,7 +79,7 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_TONE_{0~5}`|o|-|get the tone value of Ch{0~5}|
 |`VGSDEC_REG_VOL_{0~5}`|o|-|get the average volume of Ch{0~5}|
 |`VGSDEC_REG_PLAYING`|o|-|current playing status: `0` = not playing, `1` = playing|
-|`VGSDEC_REG_INDEX`|o|o|get or set the playing note-index|
+|`VGSDEC_REG_INDEX`|o|-|get the playing note-index|
 |`VGSDEC_REG_LOOP_INDEX`|o|-|get the note index of the loop-label|
 |`VGSDEC_REG_LENGTH`|o|-|get the count of the notes|
 |`VGSDEC_REG_TIME`|o|o|get or set the playing time _(1sec = 22050)_|
