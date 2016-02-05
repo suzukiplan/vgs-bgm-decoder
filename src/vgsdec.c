@@ -1,135 +1,151 @@
 /* (C)2015, SUZUKI PLAN.
  *----------------------------------------------------------------------------
- * Description: VGS mk-II SR - application program interface
+ * Description: VGS BGM Decoder
  *    Platform: Common
  *      Author: Yoji Suzuki (SUZUKI PLAN)
  *----------------------------------------------------------------------------
  */
-#include "vgs2.h"
-#include "miniz.h"
+#include "vgsdec_internal.h"
 
 /*
  *----------------------------------------------------------------------------
- * Global variables
+ * Interface functions
  *----------------------------------------------------------------------------
  */
-int BN;
-struct _BINREC* BR;
-struct _SLOT _slot[256];
-struct _EFF _eff[256];
-char* _note[256];
-static uLong _notelen[256];
-struct _NOTE _notebuf[65536];
-struct _VRAM _vram;
-struct _TOUCH _touch;
-struct _PSG _psg;
-unsigned char _mute;
-unsigned char _pause;
-unsigned char _interlace = 1;
-
-/*
- *----------------------------------------------------------------------------
- * file static functions
- *----------------------------------------------------------------------------
- */
-static void setNote(unsigned char cn, unsigned char t, unsigned char n);
-static int getNextNote();
-static char* getbin(const char* name, int* size);
-static int gclip(unsigned char n, int* sx, int* sy, int* xs, int* ys, int* dx, int* dy);
-static float myatan2(int a, int b);
-static float mysqrt(float x);
-
-/*
- *----------------------------------------------------------------------------
- * sound buffering
- *----------------------------------------------------------------------------
- */
-void sndbuf(char* buf, size_t size)
+void* __stdcall vgsdec_create_context()
 {
-    static int an;
-    int i, j;
-    int pw;
-    int wav;
-    int cs;
-    short* bp;
+    struct _CONTEXT* result;
+    result = (struct _CONTEXT*)malloc(sizeof(struct _CONTEXT));
+    if (NULL == result) return NULL;
+    memset(result, 0, sizeof(struct _CONTEXT));
+#ifdef _WIN32
+    InitializeCriticalSection(&(result->cs);
+#else
+    pthread_mutex_init(&(result->mt), NULL);
+#endif
+    return result;
+}
 
-    an = 1 - an;
+int __stdcall vgsdec_load_bgm_from_file(void* context, const char* path)
+{
+    FILE* fp;
+    void* data;
+    int size;
+    int result;
 
-    memset(buf, 0, size);
-    if (_pause || _mute) {
-        return;
+    fp = fopen(path, "rb");
+    if (NULL == fp) {
+        return -1;
     }
+    if (-1 == fseek(fp, 0, SEEK_END)) {
+        fclose(fp);
+        return -1;
+    }
+    size = ftell(fp);
+    if (size < 1) {
+        fclose(fp);
+        return -1;
+    }
+    if (-1 == fseek(fp, 0, SEEK_SET)) {
+        fclose(fp);
+        return -1;
+    }
+    data = malloc(size);
+    if (NULL == data) {
+        fclose(fp);
+        return -1;
+    }
+    if (size != fread(data, 1, (size_t)size, fp)) {
+        fclose(fp);
+        free(data);
+        return -1;
+    }
+    fclose(fp);
+    result = vgsdec_load_bgm_from_memory(context, data, size);
+    free(data);
+    return 0;
+}
 
-    for (i = 0; i < 256; i++) {
-        if (_eff[i].flag) {
-            if (1 < _eff[i].flag) {
-                eff_pos(&_eff[i], 0);
-                eff_flag(&_eff[i], 1);
-            }
-            /* calc copy size */
-            cs = _eff[i].size - _eff[i].pos;
-            if (size < (size_t)cs) {
-                cs = (int)size;
-            }
-            /* buffering */
-            for (j = 0; j < cs; j += 2) {
-                bp = (short*)(&buf[j]);
-                wav = *bp;
-                wav += *((short*)&(_eff[i].dat[_eff[i].pos + j]));
-                if (32767 < wav)
-                    wav = 32767;
-                else if (wav < -32768)
-                    wav = -32768;
-                (*bp) = (short)wav;
-            }
-            /* change position */
-            eff_pos(&_eff[i], _eff[i].pos + cs);
-            if (_eff[i].size <= _eff[i].pos) {
-                eff_flag(&_eff[i], 0); /* end sound */
-            }
-        } else {
-            eff_pos(&_eff[i], 0);
+int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size)
+{
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    uLong nblen;
+
+    if (NULL == c || NULL == data) return -1;
+    reset_context(c);
+    nblen = (uLong)sizeof(c->notes);
+    memset(c->notes, 0, nblen);
+    uncompress((unsigned char*)c->notes, &nblen, (const unsigned char*)data, size);
+    c->idxnum = nblen / sizeof(struct _NOTE);
+    if (MAX_NOTES == c->idxnum) {
+        return -1;
+    }
+    c->loopIdx = -1;
+    for (i = 0; i < c->idxnum; i++) {
+        if (NTYPE_WAIT == c->notes[i].type) {
+            c->notes.timeL += c->notes[i].val;
+        } else if (NTYPE_LABEL == _notebuf[i].type) {
+            c->notes.timeI = _psg.timeL;
+            c->loopIdx = _notebuf[i].val;
         }
     }
+    return 0;
+}
 
-    /* BGM */
-    lock();
-    if (_psg.play && _psg.notes) {
-        if (0 == _psg.waitTime) {
-            _psg.waitTime = getNextNote();
-            if (0 == _psg.waitTime) {
-                unlock();
+void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
+{
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    char* buf = (char*)buffer;
+
+    if (NULL == c || NULL == buf) return;
+    memset(buf, 0, size);
+
+    lock_context(c);
+    for (i = 0; i < 6; i++) {
+        c->wav[i] = 0;
+    }
+    if (c->play) {
+        if (100 == c->fade2) {
+            c->play = 0;
+            unlock_context(c);
+            return; /* end fadeout */
+        }
+        if (0 == c->waitTime) {
+            c->waitTime = get_next_note();
+            if (0 == c->waitTime) {
+                c->play = 0;
+                unlock_context(c);
                 return; /* no data */
             }
         }
-        if (_psg.mvol) {
+        if (c->mvol) {
             for (i = 0; i < (int)size; i += 2) {
                 for (j = 0; j < 6; j++) {
-                    if (_psg.ch[j].tone) {
-                        _psg.ch[j].cur %= _psg.ch[j].tone[0];
-                        wav = _psg.ch[j].tone[1 + _psg.ch[j].cur];
-                        _psg.ch[j].cur += 2;
-                        wav *= (_psg.ch[j].vol * _psg.mvol);
-                        if (_psg.ch[j].keyOn) {
-                            if (_psg.ch[j].count < _psg.ch[j].env1) {
-                                _psg.ch[j].count++;
-                                pw = (_psg.ch[j].count * 100) / _psg.ch[j].env1;
+                    if (c->ch[j].tone) {
+                        c->ch[j].cur %= c->ch[j].tone[0];
+                        wav = c->ch[j].tone[1 + c->ch[j].cur];
+                        c->ch[j].cur += 2;
+                        wav *= (c->ch[j].vol * c->mvol);
+                        if (c->ch[j].keyOn) {
+                            if (c->ch[j].count < c->ch[j].env1) {
+                                c->ch[j].count++;
+                                pw = (c->ch[j].count * 100) / c->ch[j].env1;
                             } else {
                                 pw = 100;
                             }
                         } else {
-                            if (_psg.ch[j].count < _psg.ch[j].env2) {
-                                _psg.ch[j].count++;
-                                pw = 100 - (_psg.ch[j].count * 100) / _psg.ch[j].env2;
+                            if (c->ch[j].count < c->ch[j].env2) {
+                                c->ch[j].count++;
+                                pw = 100 - (c->ch[j].count * 100) / c->ch[j].env2;
                             } else {
                                 pw = 0;
                             }
                         }
-                        if (!_psg.ch[j].mute) {
+                        if (!c->ch[j].mute) {
                             bp = (short*)(&buf[i]);
                             wav = (wav * pw / 100);
-                            if (_psg.ch[j].volumeRate != 100) {
-                                wav *= _psg.ch[j].volumeRate;
+                            if (c->ch[j].volumeRate != 100) {
+                                wav *= c->ch[j].volumeRate;
                                 wav /= 100;
                             }
                             wav += *bp;
@@ -137,28 +153,33 @@ void sndbuf(char* buf, size_t size)
                                 wav = 32767;
                             else if (wav < -32768)
                                 wav = -32768;
-                            if (_psg.fade2) {
-                                wav *= 100 - _psg.fade2;
+                            if (c->fade2) {
+                                wav *= 100 - c->fade2;
                                 wav /= 100;
                             }
                             (*bp) = (short)wav;
-                            _psg.wav[j] = pw;
+                            if (i) {
+                                c->wav[j] += pw < 0 ? -pw : pw;
+                                c->wav[j] >>= 1;
+                            } else {
+                                c->wav[j] = pw < 0 ? -pw : pw;
+                            }
                         }
-                        if (_psg.ch[j].pdown) {
-                            _psg.ch[j].pcnt++;
-                            if (_psg.ch[j].pdown < _psg.ch[j].pcnt) {
-                                _psg.ch[j].pcnt = 0;
-                                if (_psg.ch[j].toneK) {
-                                    _psg.ch[j].toneK--;
+                        if (c->ch[j].pdown) {
+                            c->ch[j].pcnt++;
+                            if (c->ch[j].pdown < c->ch[j].pcnt) {
+                                c->ch[j].pcnt = 0;
+                                if (c->ch[j].toneK) {
+                                    c->ch[j].toneK--;
                                 }
-                                setNote(j & 0xff, _psg.ch[j].toneT, _psg.ch[j].toneK);
+                                set_note(j & 0xff, c->ch[j].toneT, c->ch[j].toneK);
                             }
                         }
                     }
                 }
-                if (_psg.volumeRate != 100) {
+                if (c->volumeRate != 100) {
                     bp = (short*)(&buf[i]);
-                    wav = (*bp) * _psg.volumeRate;
+                    wav = (*bp) * c->volumeRate;
                     wav /= 100;
                     if (32767 < wav)
                         wav = 32767;
@@ -166,109 +187,247 @@ void sndbuf(char* buf, size_t size)
                         wav = -32768;
                     (*bp) = (short)wav;
                 }
-                _psg.waitTime--;
-                if (0 == _psg.waitTime) {
-                    _psg.waitTime = getNextNote();
-                    if (0 == _psg.waitTime) {
-                        unlock();
+                c->waitTime--;
+                if (0 == c->waitTime) {
+                    c->waitTime = get_next_note();
+                    if (0 == c->waitTime) {
+                        unlock_context(c);
                         return; /* no data */
                     }
                 }
                 /* fade out */
-                if (_psg.fade2 && _psg.fade2 < 100) {
-                    _psg.fcnt++;
-                    if (1023 < _psg.fcnt) {
-                        _psg.fcnt = 0;
-                        _psg.fade2++;
+                if (c->fade2 && c->fade2 < 100) {
+                    c->fcnt++;
+                    if (1023 < c->fcnt) {
+                        c->fcnt = 0;
+                        c->fade2++;
                     }
                 }
-                if (_psg.fade) {
-                    _psg.fcnt++;
-                    if (_psg.fade < _psg.fcnt) {
-                        _psg.mvol--;
-                        _psg.fcnt = 0;
+                if (c->fade) {
+                    c->fcnt++;
+                    if (c->fade < c->fcnt) {
+                        c->mvol--;
+                        c->fcnt = 0;
                     }
                 }
             }
         }
     } else {
-        for (i = 0; i < 6; i++) {
-            _psg.wav[i] = 0;
-        }
-        _psg.stopped = 1;
+        c->stopped = 1;
     }
-    unlock();
+    unlock_context(c);
+}
+
+int __stdcall vgsdec_get_value(void* context, int type)
+{
+    // todo: need getter of master volumeRate
+    // todo: need getter of chnnel volumeRate
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    if (NULL == c) return -1;
+    switch (type) {
+        case VGSDEC_REG_KEY_0:
+            return c->ch[0].toneK;
+        case VGSDEC_REG_KEY_1:
+            return c->ch[1].toneK;
+        case VGSDEC_REG_KEY_2:
+            return c->ch[2].toneK;
+        case VGSDEC_REG_KEY_3:
+            return c->ch[3].toneK;
+        case VGSDEC_REG_KEY_4:
+            return c->ch[4].toneK;
+        case VGSDEC_REG_KEY_5:
+            return c->ch[5].toneK;
+        case VGSDEC_REG_TONE_0:
+            return c->ch[0].toneT;
+        case VGSDEC_REG_TONE_1:
+            return c->ch[1].toneT;
+        case VGSDEC_REG_TONE_2:
+            return c->ch[2].toneT;
+        case VGSDEC_REG_TONE_3:
+            return c->ch[3].toneT;
+        case VGSDEC_REG_TONE_4:
+            return c->ch[4].toneT;
+        case VGSDEC_REG_TONE_5:
+            return c->ch[5].toneT;
+        case VGSDEC_REG_VOL_0:
+            return c->wav[0];
+        case VGSDEC_REG_VOL_1:
+            return c->wav[1];
+        case VGSDEC_REG_VOL_2:
+            return c->wav[2];
+        case VGSDEC_REG_VOL_3:
+            return c->wav[3];
+        case VGSDEC_REG_VOL_4:
+            return c->wav[4];
+        case VGSDEC_REG_VOL_5:
+            return c->wav[5];
+        case VGSDEC_REG_PLAYING:
+            return c->play;
+        case VGSDEC_REG_INDEX:
+            return c->nidx;
+        case VGSDEC_REG_LOOP_INDEX:
+            return c->loopIdx;
+        case VGSDEC_REG_LENGTH:
+            return c->idxnum;
+        case VGSDEC_REG_TIME:
+            return c->timeP;
+        case VGSDEC_REG_LOOP_TIME:
+            return c->timeI;
+        case VGSDEC_REG_TIME_LENGTH:
+            return c->timeL;
+        case VGSDEC_REG_LOOP_COUNT:
+            return c->loop;
+    }
+    return -1;
+}
+
+void __stdcall vgsdec_set_value(void* context, int type, int value)
+{
+    // todo: need setter of master volumeRate
+    // todo: need setter of chnnel volumeRate
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+
+    if (NULL == c) return;
+    lock_context(c);
+    switch (type) {
+        case VGSDEC_REG_TIME:
+            if (0 <= value) jump_time(c, value);
+            break;
+        case VGSDEC_REG_FADEOUT:
+            if (value && 0 == c->fade2) c->fade2;
+            break;
+        case VGSDEC_REG_RESET:
+            if (value) reset_context(c);
+            break;
+    }
+    unlock_context(c);
+}
+
+void __stdcall vgsdec_release_context(void* context)
+{
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+
+    if (NULL != c) {
+#ifdef _WIN32
+        DeleteCriticalSection(&(c->cs);
+#else
+        pthread_mutex_destroy(&(c->mt));
+#endif
+        memset(c,0,sizeof(struct _CONTEXT));
+        free(c);
+    }
 }
 
 /*
  *----------------------------------------------------------------------------
- * set tone and tune
+ * Internal functions
  *----------------------------------------------------------------------------
  */
-static void setNote(unsigned char cn, unsigned char t, unsigned char n)
+static void reset_context(struct _CONTEXT* c)
 {
-    n += _psg.addKey[cn];
+    c->play = 1;
+    c->mask = 0;
+    c->mvol = 0;
+    c->waitTime = 0;
+    memset(c->wav, 0, sizeof(c->wav));
+    c->nidx = 0;
+    c->stopped = 0;
+    c->fade = 0;
+    c->fcnt = 0;
+    memset(c->ch, 0, sizeof(c->ch));
+    c->mute = 0;
+    c->loop = 0;
+    c->fade2 = 0;
+    memset(c->addKey, 0, sizeof(c->addKey));
+    memset(c->addOff, 0, sizeof(c->addOff));
+    c->volumeRate = 100;
+    c->ch[0].volumeRate = 100;
+    c->ch[1].volumeRate = 100;
+    c->ch[2].volumeRate = 100;
+    c->ch[3].volumeRate = 100;
+    c->ch[4].volumeRate = 100;
+    c->ch[5].volumeRate = 100;
+}
+
+static void lock_context(struct _CONTEXT* c)
+{
+#ifdef _WIN32
+    EnterCriticalSection(&(result->cs);
+#else
+    pthread_mutex_lock(&(result->mt));
+#endif
+}
+
+static void unlock_context(struct _CONTEXT* c)
+{
+#ifdef _WIN32
+    LeaveCriticalSection(&(result->cs);
+#else
+    pthread_mutex_unlock(&(result->mt));
+#endif
+}
+
+/* set tone and tune */
+static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsigned char n)
+{
+    n += c->addKey[cn];
     switch (t) {
         case 0: /* SANKAKU */
-            _psg.ch[cn].tone = TONE1[n % 85];
+            c->ch[cn].tone = TONE1[n % 85];
             break;
         case 1: /* NOKOGIR */
-            _psg.ch[cn].tone = TONE2[n % 85];
+            c->ch[cn].tone = TONE2[n % 85];
             break;
         case 2: /* KUKEI */
-            _psg.ch[cn].tone = TONE3[n % 85];
+            c->ch[cn].tone = TONE3[n % 85];
             break;
         default: /* NOIZE */
-            _psg.ch[cn].tone = TONE4[n % 85];
+            c->ch[cn].tone = TONE4[n % 85];
             break;
     }
 }
 
-/*
- *----------------------------------------------------------------------------
- * get next waittime
- *----------------------------------------------------------------------------
- */
-static int getNextNote()
+/* get next waittime */
+static int get_next_note(struct _CONTEXT* c)
 {
     int ret;
-    if (_psg.notes[_psg.nidx].type == NTYPE_WAIT && 0 == _psg.notes[_psg.nidx].val) {
+    if (c->notes[c->nidx].type == NTYPE_WAIT && 0 == c->notes[c->nidx].val) {
         return 0;
     }
-    for (; NTYPE_WAIT != _psg.notes[_psg.nidx].type; _psg.nidx++) {
-        switch (_psg.notes[_psg.nidx].type) {
+    for (; NTYPE_WAIT != c->notes[c->nidx].type; c->nidx++) {
+        switch (c->notes[c->nidx].type) {
             case NTYPE_ENV1: /* op1=ch, val=env1 */
-                _psg.ch[_psg.notes[_psg.nidx].op1].env1 = _psg.notes[_psg.nidx].val;
+                c->ch[c->notes[c->nidx].op1].env1 = c->notes[c->nidx].val;
                 break;
             case NTYPE_ENV2: /* op1=ch, val=env1 */
-                _psg.ch[_psg.notes[_psg.nidx].op1].env2 = _psg.notes[_psg.nidx].val;
+                c->ch[c->notes[c->nidx].op1].env2 = c->notes[c->nidx].val;
                 break;
             case NTYPE_VOL: /* op1=ch, val=vol */
-                _psg.ch[_psg.notes[_psg.nidx].op1].vol = _psg.notes[_psg.nidx].val;
+                c->ch[c->notes[c->nidx].op1].vol = c->notes[c->nidx].val;
                 break;
             case NTYPE_MVOL: /* val=mvol */
-                _psg.mvol = _psg.notes[_psg.nidx].val;
+                c->mvol = c->notes[c->nidx].val;
                 break;
             case NTYPE_KEYON: /* op1=ch, op2=tone, op3=key */
-                _psg.ch[_psg.notes[_psg.nidx].op1].keyOn = 1;
-                _psg.ch[_psg.notes[_psg.nidx].op1].count = 0;
-                _psg.ch[_psg.notes[_psg.nidx].op1].cur = 0;
-                _psg.ch[_psg.notes[_psg.nidx].op1].toneT = _psg.notes[_psg.nidx].op2;
-                _psg.ch[_psg.notes[_psg.nidx].op1].toneK = _psg.notes[_psg.nidx].op3;
-                setNote(_psg.notes[_psg.nidx].op1, _psg.notes[_psg.nidx].op2, _psg.notes[_psg.nidx].op3);
+                c->ch[c->notes[c->nidx].op1].keyOn = 1;
+                c->ch[c->notes[c->nidx].op1].count = 0;
+                c->ch[c->notes[c->nidx].op1].cur = 0;
+                c->ch[c->notes[c->nidx].op1].toneT = c->notes[c->nidx].op2;
+                c->ch[c->notes[c->nidx].op1].toneK = c->notes[c->nidx].op3;
+                set_note(c->notes[c->nidx].op1, c->notes[c->nidx].op2, c->notes[c->nidx].op3);
                 break;
             case NTYPE_KEYOFF: /* op1=ch */
-                _psg.ch[_psg.notes[_psg.nidx].op1].keyOn = 0;
-                _psg.ch[_psg.notes[_psg.nidx].op1].count = 0;
+                c->ch[c->notes[c->nidx].op1].keyOn = 0;
+                c->ch[c->notes[c->nidx].op1].count = 0;
                 break;
             case NTYPE_PDOWN: /* op1=ch, val=Hz */
-                _psg.ch[_psg.notes[_psg.nidx].op1].pdown = _psg.notes[_psg.nidx].val;
-                _psg.ch[_psg.notes[_psg.nidx].op1].pcnt = 0;
+                c->ch[c->notes[c->nidx].op1].pdown = c->notes[c->nidx].val;
+                c->ch[c->notes[c->nidx].op1].pcnt = 0;
                 break;
             case NTYPE_JUMP: /* val=address */
-                _psg.nidx = _psg.notes[_psg.nidx].val;
-                _psg.loop++;
-                _psg.timeP = _psg.timeI;
+                c->nidx = c->notes[c->nidx].val;
+                c->loop++;
+                c->timeP = c->timeI;
                 break;
             case NTYPE_LABEL:
                 break;
@@ -276,242 +435,19 @@ static int getNextNote()
                 return 0;
         }
     }
-    ret = _psg.notes[_psg.nidx].val;
+    ret = c->notes[c->nidx].val;
     if (ret) {
-        _psg.nidx++;
+        c->nidx++;
     }
-    _psg.timeP += ret;
+    c->timeP += ret;
     return ret;
 }
 
-/*
- *----------------------------------------------------------------------------
- * load a BGM file (direct)
- *----------------------------------------------------------------------------
- */
-int bload_direct(unsigned char n, const char* name)
+/* jump specific time */
+void jump_time(struct _CONTEXT* c, int sec)
 {
-    FILE* fp;
-    int size;
-    fp = fopen(name, "rb");
-    if (NULL == fp) {
-        return -1;
-    }
-    fseek(fp, 0, SEEK_END);
-    size = ftell(fp);
-    if (size < 1) {
-        fclose(fp);
-        return -1;
-    }
-    fseek(fp, 0, SEEK_SET);
-    _note[n] = (char*)malloc(size);
-    if (NULL == _note[n]) {
-        fclose(fp);
-        return -1;
-    }
-    fread(_note[n], size, 1, fp);
-    fclose(fp);
-    _notelen[n] = (uLong)size;
-    return 0;
-}
-
-/*
- *----------------------------------------------------------------------------
- * load a BGM from memory (direct)
- *----------------------------------------------------------------------------
- */
-int bload_direct2(unsigned char n, const char* src, int size)
-{
-    _note[n] = (char*)malloc(size);
-    if (NULL == _note[n]) {
-        return -1;
-    }
-    memcpy(_note[n], src, size);
-    _notelen[n] = (uLong)size;
-    return 0;
-}
-
-/*
- *----------------------------------------------------------------------------
- * free a slot (direct)
- *----------------------------------------------------------------------------
- */
-void bfree_direct(unsigned char n)
-{
-    vgs2_bstop();
-    lock();
-    if (_note[n]) {
-        free(_note[n]);
-        _notelen[n] = 0;
-    }
-    unlock();
-}
-
-/*
- *----------------------------------------------------------------------------
- * play BGM
- *----------------------------------------------------------------------------
- */
-void vgs2_bplay(unsigned char n)
-{
-    uLong nblen;
-    int i;
-    vgs2_bstop();
-    lock();
-    memset(&_psg, 0, sizeof(_psg));
-    _psg.volumeRate = 100;
-    _psg.ch[0].volumeRate = 100;
-    _psg.ch[1].volumeRate = 100;
-    _psg.ch[2].volumeRate = 100;
-    _psg.ch[3].volumeRate = 100;
-    _psg.ch[4].volumeRate = 100;
-    _psg.ch[5].volumeRate = 100;
-    _psg.notes = _notebuf;
-    nblen = (uLong)sizeof(_notebuf);
-    uncompress((unsigned char*)_notebuf, &nblen, (const unsigned char*)_note[n], _notelen[n]);
-    _psg.idxnum = nblen / sizeof(struct _NOTE);
-    for (i = 0; i < _psg.idxnum; i++) {
-        if (NTYPE_WAIT == _notebuf[i].type) {
-            _psg.timeL += _notebuf[i].val;
-        } else if (NTYPE_LABEL == _notebuf[i].type) {
-            _psg.timeI = _psg.timeL;
-        }
-    }
-    unlock();
-    _psg.play = 1;
-}
-
-/*
- *----------------------------------------------------------------------------
- * stop BGM
- *----------------------------------------------------------------------------
- */
-void vgs2_bstop()
-{
-    lock();
-    if (_psg.play && _psg.notes) {
-        _psg.stopped = 0;
-        _psg.play = 0;
-    }
-    unlock();
-}
-
-/*
- *----------------------------------------------------------------------------
- * resume playing the BGM
- *----------------------------------------------------------------------------
- */
-void vgs2_bresume()
-{
-    lock();
-    if (0 == _psg.play) {
-        _psg.play = 1;
-    }
-    unlock();
-}
-
-/*
- *----------------------------------------------------------------------------
- * fade out the BGM (2)
- *----------------------------------------------------------------------------
- */
-void vgs2_bfade2()
-{
-    lock();
-    _psg.fade2 = 1;
-    unlock();
-}
-
-/*
- *----------------------------------------------------------------------------
- * chage key
- *----------------------------------------------------------------------------
- */
-void vgs2_bkey(int n)
-{
-    int i;
-    for (i = 0; i < 6; i++) {
-        if (_psg.addOff[i] == 0) {
-            _psg.addKey[i] = n;
-        }
-    }
-}
-
-/*
- *----------------------------------------------------------------------------
- * not chage key
- *----------------------------------------------------------------------------
- */
-void vgs2_bkoff(int cn, int off)
-{
-    if (cn < 0 || 6 <= cn) return;
-    _psg.addOff[cn] = off;
-    if (off) {
-        _psg.addKey[cn] = 0;
-    }
-}
-
-/*
- *----------------------------------------------------------------------------
- * skip notes
- *----------------------------------------------------------------------------
- */
-void vgs2_bjump(int sec)
-{
-    int hz = 0;
-    if (NULL == _psg.notes) return;
-    lock();
-    _psg.timeP = 0;
-    _psg.loop = 0;
-    _psg.nidx = 0;
+    reset_context(c);
     while (0 < sec) {
-        hz += getNextNote();
-        while (22050 <= hz) {
-            hz -= 22050;
-            sec--;
-        }
+        sec -= get_next_note(c);
     }
-    unlock();
-}
-
-/*
- *----------------------------------------------------------------------------
- * mute channel
- *----------------------------------------------------------------------------
- */
-void vgs2_bmute(int ch)
-{
-    if (ch < 0 || 5 < ch) return;
-    lock();
-    _psg.ch[ch].mute = 1 - _psg.ch[ch].mute;
-    unlock();
-}
-
-/*
- *----------------------------------------------------------------------------
- * master volume
- *----------------------------------------------------------------------------
- */
-void vgs2_bmvol(int rate)
-{
-    if (rate < 0)
-        rate = 0;
-    else if (100 < rate)
-        rate = 100;
-    _psg.volumeRate = rate;
-}
-
-/*
- *----------------------------------------------------------------------------
- * channel volume
- *----------------------------------------------------------------------------
- */
-void vgs2_bcvol(int ch, int rate)
-{
-    if (ch < 0 || 5 < ch) return;
-    if (rate < 0)
-        rate = 0;
-    else if (100 < rate)
-        rate = 100;
-    _psg.ch[ch].volumeRate = rate;
 }

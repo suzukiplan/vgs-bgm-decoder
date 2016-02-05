@@ -1,10 +1,15 @@
 /* (C)2016, SUZUKI PLAN.
  *----------------------------------------------------------------------------
- * Description: VGSDEC - internal header
+ * Description: VGS BGM Decoder - internal header
  *    Platform: Common
  *      Author: Yoji Suzuki (SUZUKI PLAN)
  *----------------------------------------------------------------------------
  */
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -13,6 +18,7 @@
 #include <time.h>
 #include <math.h>
 #include "vgsdec.h"
+#include "miniz.h"
 
 #define SAMPLE_RATE 22050
 #define SAMPLE_BITS 16
@@ -30,6 +36,8 @@
 #define NTYPE_JUMP 9
 #define NTYPE_LABEL 10
 
+#define MAX_NOTES 65536
+
 struct _NOTE {
     unsigned char type;
     unsigned char op1;
@@ -41,7 +49,6 @@ struct _NOTE {
 struct _PSGCH {
     short* tone;
     unsigned char vol;
-    unsigned char key;
     unsigned char keyOn;
     unsigned char mute;
     unsigned int cur;
@@ -55,13 +62,18 @@ struct _PSGCH {
     int volumeRate;
 };
 
-struct _PSG {
-    struct _NOTE* notes;
+struct _CONTEXT {
+#ifdef _WIN32
+    CRITICAL_SECTION cs;
+#else
+    pthread_mutex_t mt;
+#endif
+    struct _NOTE[MAX_NOTES] notes;
     unsigned char play;
     unsigned char mask;
     unsigned short mvol;
     unsigned int waitTime;
-    short wav[6];
+    int wav[6];
     int nidx;
     int stopped;
     unsigned int fade;
@@ -75,6 +87,7 @@ struct _PSG {
     unsigned int timeP;
     int addKey[6];
     int addOff[6];
+    int loopIdx;
     int idxnum;
     int volumeRate;
 };
@@ -83,3 +96,10 @@ extern short* TONE1[85];
 extern short* TONE2[85];
 extern short* TONE3[85];
 extern short* TONE4[85];
+
+static void reset_context(struct _CONTEXT* c);
+static void lock_context(struct _CONTEXT* c);
+static void unlock_context(struct _CONTEXT* c);
+static void set_note(unsigned char cn, unsigned char t, unsigned char n);
+static int get_next_note();
+void jump_time(struct _CONTEXT* c, int sec);
