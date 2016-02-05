@@ -451,10 +451,13 @@ static int get_next_note(struct _CONTEXT* c)
 }
 
 /* jump specific time */
-void jump_time(struct _CONTEXT* c, int sec)
+static void jump_time(struct _CONTEXT* c, int sec)
 {
+    int wt;
     reset_context(c);
     while (0 < sec) {
-        sec -= get_next_note(c);
+        wt = get_next_note(c);
+        if (0 == wt) break;
+        sec -= wt;
     }
 }
