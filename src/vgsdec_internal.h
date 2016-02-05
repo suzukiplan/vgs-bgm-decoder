@@ -93,4 +93,4 @@ static void lock_context(struct _CONTEXT* c);
 static void unlock_context(struct _CONTEXT* c);
 static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsigned char n);
 static int get_next_note(struct _CONTEXT* c);
-void jump_time(struct _CONTEXT* c, int sec);
+static void jump_time(struct _CONTEXT* c, int sec);
