@@ -29,4 +29,3 @@ void __stdcall vgsdec_release_context(void* context);
 #endif
 
 #endif
-
