@@ -1,6 +1,7 @@
 # VGS BGM Decoder
 - decodes: `VGS's .BGM file` to `PCM`
 - platform free
+- __UNDER DEVELOPMENT__
 
 ## How to use (draft)
 - Create Context
