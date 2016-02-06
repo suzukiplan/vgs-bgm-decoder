@@ -16,12 +16,12 @@
  */
 void* __stdcall vgsdec_create_context()
 {
-    struct _CONTEXT* result;
-    result = (struct _CONTEXT*)malloc(sizeof(struct _CONTEXT));
+    struct _VGSCTX* result;
+    result = (struct _VGSCTX*)malloc(sizeof(struct _VGSCTX));
     if (NULL == result) return NULL;
-    memset(result, 0, sizeof(struct _CONTEXT));
+    memset(result, 0, sizeof(struct _VGSCTX));
 #ifdef _WIN32
-    InitializeCriticalSection(&(result->cs);
+    InitializeCriticalSection(&(result->cs));
 #else
     pthread_mutex_init(&(result->mt), NULL);
 #endif
@@ -70,7 +70,7 @@ int __stdcall vgsdec_load_bgm_from_file(void* context, const char* path)
 
 int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
     uLong nblen;
     int i;
 
@@ -102,7 +102,7 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
 
 void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
     char* buf = (char*)buffer;
     static int an;
     int i, j;
@@ -236,7 +236,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
 
 int __stdcall vgsdec_get_value(void* context, int type)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
     if (NULL == c) return -1;
     switch (type) {
         case VGSDEC_REG_KEY_0:
@@ -313,7 +313,7 @@ int __stdcall vgsdec_get_value(void* context, int type)
 
 void __stdcall vgsdec_set_value(void* context, int type, int value)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
 
     if (NULL == c) return;
     lock_context(c);
@@ -356,30 +356,30 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
 
 void __stdcall vgsdec_release_context(void* context)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
 
     if (NULL != c) {
 #ifdef _WIN32
-        DeleteCriticalSection(&(c->cs);
+        DeleteCriticalSection(&(c->cs));
 #else
         pthread_mutex_destroy(&(c->mt));
 #endif
         release_meta_data(c);
-        memset(c,0,sizeof(struct _CONTEXT));
+        memset(c,0,sizeof(struct _VGSCTX));
         free(c);
     }
 }
 
 struct VgsMetaHeader* __stdcall vgsdec_get_meta_header(void* context)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
     if (NULL == c) return NULL;
     return c->mhead;
 }
 
 struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index)
 {
-    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
     if (NULL == c || NULL == c->mhead || NULL == c->mdata || index < 0) return NULL;
     if (c->mhead->num <= index) return NULL;
     return c->mdata[index];
@@ -390,7 +390,7 @@ struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index)
  * Internal functions
  *----------------------------------------------------------------------------
  */
-static void reset_context(struct _CONTEXT* c)
+static void reset_context(struct _VGSCTX* c)
 {
     c->play = 1;
     c->mask = 0;
@@ -416,7 +416,7 @@ static void reset_context(struct _CONTEXT* c)
     c->ch[5].volumeRate = 100;
 }
 
-static size_t extract_meta_data(struct _CONTEXT* c, void* data, size_t size)
+static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size)
 {
     size_t msize = 0;
     char* d = (char*)data;
@@ -458,7 +458,7 @@ static size_t extract_meta_data(struct _CONTEXT* c, void* data, size_t size)
     return msize;
 }
 
-static void release_meta_data(struct _CONTEXT* c)
+static void release_meta_data(struct _VGSCTX* c)
 {
     int i;
     if (NULL != c->mhead) {
@@ -477,26 +477,26 @@ static void release_meta_data(struct _CONTEXT* c)
     }
 }
 
-static void lock_context(struct _CONTEXT* c)
+static void lock_context(struct _VGSCTX* c)
 {
 #ifdef _WIN32
-    EnterCriticalSection(&(c->cs);
+    EnterCriticalSection(&(c->cs));
 #else
     pthread_mutex_lock(&(c->mt));
 #endif
 }
 
-static void unlock_context(struct _CONTEXT* c)
+static void unlock_context(struct _VGSCTX* c)
 {
 #ifdef _WIN32
-    LeaveCriticalSection(&(c->cs);
+    LeaveCriticalSection(&(c->cs));
 #else
     pthread_mutex_unlock(&(c->mt));
 #endif
 }
 
 /* set tone and tune */
-static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsigned char n)
+static void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n)
 {
     n += c->addKey[cn];
     switch (t) {
@@ -516,7 +516,7 @@ static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsi
 }
 
 /* get next waittime */
-static int get_next_note(struct _CONTEXT* c)
+static int get_next_note(struct _VGSCTX* c)
 {
     int ret;
     if (c->notes[c->nidx].type == NTYPE_WAIT && 0 == c->notes[c->nidx].val) {
@@ -572,7 +572,7 @@ static int get_next_note(struct _CONTEXT* c)
 }
 
 /* jump specific time */
-static void jump_time(struct _CONTEXT* c, int sec)
+static void jump_time(struct _VGSCTX* c, int sec)
 {
     int wt;
     reset_context(c);
