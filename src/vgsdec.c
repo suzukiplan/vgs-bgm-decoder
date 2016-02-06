@@ -76,6 +76,11 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
 
     if (NULL == c || NULL == data) return -1;
     reset_context(c);
+    if (0 == memcmp(data, "VGSPACK", 8)) {
+        int msize = extract_meta_data(c, data, size);
+        data = ((char*)data) + msize;
+        size -= msize;
+    }
     nblen = (uLong)sizeof(c->notes);
     memset(c->notes, 0, nblen);
     uncompress((unsigned char*)c->notes, &nblen, (const unsigned char*)data, size);
@@ -359,9 +364,25 @@ void __stdcall vgsdec_release_context(void* context)
 #else
         pthread_mutex_destroy(&(c->mt));
 #endif
+        release_meta_data(c);
         memset(c,0,sizeof(struct _CONTEXT));
         free(c);
     }
+}
+
+struct VgsMetaHeader* __stdcall vgsdec_get_meta_header(void* context)
+{
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    if (NULL == c) return NULL;
+    return c->mhead;
+}
+
+struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index)
+{
+    struct _CONTEXT* c = (struct _CONTEXT*)context;
+    if (NULL == c || NULL == c->mhead || NULL == c->mdata || index < 0) return NULL;
+    if (c->mhead->num <= index) return NULL;
+    return c->mdata[index];
 }
 
 /*
@@ -393,6 +414,67 @@ static void reset_context(struct _CONTEXT* c)
     c->ch[3].volumeRate = 100;
     c->ch[4].volumeRate = 100;
     c->ch[5].volumeRate = 100;
+}
+
+static size_t extract_meta_data(struct _CONTEXT* c, void* data, size_t size)
+{
+    size_t msize = 0;
+    char* d = (char*)data;
+    int i;
+
+    /* release old data */
+    release_meta_data(c);
+
+    /* read header */
+    msize = sizeof(struct VgsMetaHeader);
+    if (size < msize) return 0;
+    c->mhead = (struct VgsMetaHeader*)malloc(msize);
+    if (NULL == c->mhead) return 0;
+    memcpy(c->mhead, d, msize);
+    d += msize;
+
+    /* read data */
+    if (c->mhead->num) {
+        c->mdata = (struct VgsMetaData**)malloc(sizeof(struct VgsMetaData*) * c->mhead->num);
+        memset(c->mdata, 0, sizeof(struct VgsMetaData*) * c->mhead->num);
+        for (i = 0; i < c->mhead->num; i++) {
+            if (size < msize + sizeof(struct VgsMetaData)) {
+                release_meta_data(c);
+                return 0;
+            }
+            c->mdata[i] = (struct VgsMetaData*)malloc(sizeof(struct VgsMetaData));
+            if (NULL == c->mdata[i]) {
+                release_meta_data(c);
+                return 0;
+            }
+            memcpy(c->mdata[i], d, sizeof(struct VgsMetaData));
+            c->mdata[i]->year = ntohs(c->mdata[i]->year);
+            c->mdata[i]->aid = ntohs(c->mdata[i]->aid);
+            c->mdata[i]->track = ntohs(c->mdata[i]->track);
+            d += sizeof(struct VgsMetaData);
+            msize += sizeof(struct VgsMetaData);
+        }
+    }
+    return msize;
+}
+
+static void release_meta_data(struct _CONTEXT* c)
+{
+    int i;
+    if (NULL != c->mhead) {
+        if (NULL != c->mdata) {
+            /* release data */
+            for (i = 0; i < c->mhead->num; i++) {
+                if (NULL != c->mdata[i]) free(c->mdata[i]);
+                c->mdata[i] = NULL;
+            }
+            free(c->mdata);
+            c->mdata = NULL;
+        }
+        /* release header */
+        free(c->mhead);
+        c->mhead = NULL;
+    }
 }
 
 static void lock_context(struct _CONTEXT* c)

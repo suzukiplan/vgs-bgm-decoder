@@ -7,6 +7,7 @@ decoder: decoder.c ../src/vgs2tone.c ../src/vgsdec.c
 
 test: decoder
 	vgs2mml test.mml test.bgm
-	./decoder test.bgm test.wav
+	vgs2pack test
+	./decoder test.vgs test.wav
 	open test.wav
 

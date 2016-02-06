@@ -51,6 +51,8 @@ int main(int argc, char* argv[])
     FILE* wav;
     struct DataHeader dh;
     int i;
+    struct VgsMetaHeader* mhead;
+    struct VgsMetaData* mdata;
 
     if (argc < 3) {
         puts("usage: decoder bgm_file wav_file");
@@ -95,6 +97,32 @@ int main(int argc, char* argv[])
     dh.dsize = 0;
     fwrite(&dh, 1, sizeof(dh), wav);
 
+    /* show meta header if exist */
+    mhead = vgsdec_get_meta_header(context);
+    printf("META-HEADER: ");
+    if (NULL != mhead) {
+        printf("\n");
+        printf(" - format: %s\n", mhead->format);
+        printf(" - genre: %s\n", mhead->genre);
+        printf(" - data count: %d\n", (int)mhead->num);
+    } else {
+        printf("n/a\n");
+    }
+
+    /* show meta data if exist */
+    for (i = 0; NULL != (mdata = vgsdec_get_meta_data(context, i)); i++) {
+        printf("META-DATA #%d:\n", i + 1);
+        printf(" - year: %d\n", (int)mdata->year);
+        printf(" - aid: %d\n", (int)mdata->aid);
+        printf(" - track: %d\n", (int)mdata->track);
+        printf(" - album: %s\n", mdata->album);
+        printf(" - song: %s\n", mdata->song);
+        printf(" - team: %s\n", mdata->team);
+        printf(" - creator: %s\n", mdata->creator);
+        printf(" - right: %s\n", mdata->right);
+        printf(" - code: %s\n", mdata->code);
+    }
+
     /* show length info */
     printf("NUMBER OF NOTES: %d\n", vgsdec_get_value(context, VGSDEC_REG_LENGTH));
     printf("LOOP-INDEX: %d\n", vgsdec_get_value(context, VGSDEC_REG_LOOP_INDEX));
@@ -118,7 +146,7 @@ int main(int argc, char* argv[])
         dh.dsize += sizeof(buf);
     }
 
-    /* wait the end of fadeout if looped */
+    /* waiting for the end of fadeout if looped */
     if (vgsdec_get_value(context, VGSDEC_REG_LOOP_COUNT)) {
         vgsdec_set_value(context, VGSDEC_REG_FADEOUT, 1);
         while (vgsdec_get_value(context, VGSDEC_REG_PLAYING)) {

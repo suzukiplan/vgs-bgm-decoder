@@ -7,8 +7,10 @@
  */
 #ifdef _WIN32
 #include <windows.h>
+#include <winsock2.h>
 #else
 #include <pthread.h>
+#include <arpa/inet.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +62,8 @@ struct _CONTEXT {
     pthread_mutex_t mt;
 #endif
     struct _NOTE notes[MAX_NOTES];
+    struct VgsMetaHeader* mhead;
+    struct VgsMetaData** mdata;
     unsigned char play;
     unsigned char mask;
     unsigned short mvol;
@@ -95,3 +99,5 @@ static void unlock_context(struct _CONTEXT* c);
 static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsigned char n);
 static int get_next_note(struct _CONTEXT* c);
 static void jump_time(struct _CONTEXT* c, int sec);
+static size_t extract_meta_data(struct _CONTEXT* c, void* data, size_t size);
+static void release_meta_data(struct _CONTEXT* c);
