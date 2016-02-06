@@ -89,7 +89,7 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
             c->timeL += c->notes[i].val;
         } else if (NTYPE_LABEL == c->notes[i].type) {
             c->timeI = c->timeL;
-            c->loopIdx = c->notes[i].val;
+            c->loopIdx = i;
         }
     }
     return 0;
