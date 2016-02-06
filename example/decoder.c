@@ -33,12 +33,24 @@ struct DataHeader {
     unsigned int dsize;
 };
 
+static char* sec(int hz)
+{
+    static char result[8];
+    int s, m;
+    s = hz / 22050;
+    m = s / 60;
+    s %= 60;
+    sprintf(result, "%02d:%02d", m, s);
+    return result;
+}
+
 int main(int argc, char* argv[])
 {
     char buf[1024];
     void* context;
     FILE* wav;
     struct DataHeader dh;
+    int i;
 
     if (argc < 3) {
         puts("usage: decoder bgm_file wav_file");
@@ -82,6 +94,22 @@ int main(int argc, char* argv[])
     dh.bits = 16;
     dh.dsize = 0;
     fwrite(&dh, 1, sizeof(dh), wav);
+
+    /* show length info */
+    printf("NUMBER OF NOTES: %d\n", vgsdec_get_value(context, VGSDEC_REG_LENGTH));
+    printf("LOOP-INDEX: %d\n", vgsdec_get_value(context, VGSDEC_REG_LOOP_INDEX));
+    printf("TIME: %s\n", sec(vgsdec_get_value(context, VGSDEC_REG_TIME_LENGTH)));
+    printf("LOOP: %s\n", sec(vgsdec_get_value(context, VGSDEC_REG_LOOP_TIME)));
+
+    /* set channel volume */
+    for (i = 0; i < 6; i++) {
+        vgsdec_set_value(context, VGSDEC_REG_VOLUME_RATE_0 + i, 100);
+        printf("CHANNEL-VOLUME #%d: %d\n", i, vgsdec_get_value(context, VGSDEC_REG_VOLUME_RATE_0 + i));
+    }
+
+    /* master volume */
+    vgsdec_set_value(context, VGSDEC_REG_VOLUME_RATE, 100);
+    printf("MASTER-VOLUME: %d\n", vgsdec_get_value(context, VGSDEC_REG_VOLUME_RATE));
 
     /* decoding loop */
     while (vgsdec_get_value(context, VGSDEC_REG_PLAYING) && vgsdec_get_value(context, VGSDEC_REG_LOOP_COUNT) == 0) {
