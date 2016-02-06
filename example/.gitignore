@@ -1,4 +1,5 @@
 test.wav
 test.bgm
 test.vgs
-
+*.exe
+*.obj

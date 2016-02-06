@@ -1,5 +1,8 @@
 # Changes
 
+## Version 0.03 (beta)
+- support windows: https://github.com/suzukiplan/vgs-bgm-decoder/issues/15 
+
 ## Version 0.02 (beta)
 - support change volume rate: https://github.com/suzukiplan/vgs-bgm-decoder/issues/3
 - support synthesis mode: https://github.com/suzukiplan/vgs-bgm-decoder/issues/7

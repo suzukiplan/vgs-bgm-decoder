@@ -6,8 +6,8 @@
  *----------------------------------------------------------------------------
  */
 #ifdef _WIN32
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #else
 #include <pthread.h>
 #include <arpa/inet.h>
@@ -55,7 +55,7 @@ struct _PSGCH {
     int volumeRate;
 };
 
-struct _CONTEXT {
+struct _VGSCTX {
 #ifdef _WIN32
     CRITICAL_SECTION cs;
 #else
@@ -93,11 +93,11 @@ extern short* TONE2[85];
 extern short* TONE3[85];
 extern short* TONE4[85];
 
-static void reset_context(struct _CONTEXT* c);
-static void lock_context(struct _CONTEXT* c);
-static void unlock_context(struct _CONTEXT* c);
-static void set_note(struct _CONTEXT* c, unsigned char cn, unsigned char t, unsigned char n);
-static int get_next_note(struct _CONTEXT* c);
-static void jump_time(struct _CONTEXT* c, int sec);
-static size_t extract_meta_data(struct _CONTEXT* c, void* data, size_t size);
-static void release_meta_data(struct _CONTEXT* c);
+static void reset_context(struct _VGSCTX* c);
+static void lock_context(struct _VGSCTX* c);
+static void unlock_context(struct _VGSCTX* c);
+static void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n);
+static int get_next_note(struct _VGSCTX* c);
+static void jump_time(struct _VGSCTX* c, int sec);
+static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size);
+static void release_meta_data(struct _VGSCTX* c);
