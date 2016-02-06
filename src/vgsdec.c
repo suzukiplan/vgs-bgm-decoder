@@ -107,7 +107,9 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
     short* bp;
 
     if (NULL == c || NULL == buf) return;
-    memset(buf, 0, size);
+    if (0 == c->synthesis) {
+        memset(buf, 0, size);
+    }
 
     lock_context(c);
     for (i = 0; i < 6; i++) {
@@ -298,6 +300,8 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->ch[5].volumeRate;
         case VGSDEC_REG_VOLUME_RATE:
             return c->volumeRate;
+        case VGSDEC_REG_SYNTHESIS_BUFFER:
+            return c->synthesis;
     }
     return -1;
 }
@@ -339,6 +343,8 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
         case VGSDEC_REG_VOLUME_RATE:
             c->volumeRate = ROUND(value, 0, 100);
             break;
+        case VGSDEC_REG_SYNTHESIS_BUFFER:
+            c->synthesis = value ? 1 : 0;
     }
     unlock_context(c);
 }
