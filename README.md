@@ -90,6 +90,7 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_FADEOUT`|-|o|set none-zero: start fadeout.|
 |`VGSDEC_REG_VOLUME_RATE_{0~5}`|o|o|get or set the channel volume rate (0~100)|
 |`VGSDEC_REG_VOLUME_RATE`|o|o|get or set the master volume rate (0~100)|
+|`VGSDEC_REG_SYNTHESIS_BUFFER`|o|o|set none-zero: does not clear the buffer when called `vgsdec_execute`|
 
 #### scale value
 |Octave|`A`|`A#`|`B`|`C`|`C#`|`D`|`D#`|`E`|`F`|`F#`|`G`|`G#`|

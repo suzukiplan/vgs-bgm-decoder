@@ -81,6 +81,7 @@ struct _CONTEXT {
     int loopIdx;
     int idxnum;
     int volumeRate;
+    int synthesis;
 };
 
 extern short* TONE1[85];
