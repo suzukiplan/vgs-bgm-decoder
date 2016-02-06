@@ -3,3 +3,6 @@ test.bgm
 test.vgs
 *.exe
 *.obj
+callgrind.out.*
+*.dSYM
+

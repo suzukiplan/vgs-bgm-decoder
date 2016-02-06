@@ -364,7 +364,7 @@ void __stdcall vgsdec_release_context(void* context)
         pthread_mutex_destroy(&(c->mt));
 #endif
         release_meta_data(c);
-        memset(c,0,sizeof(struct _VGSCTX));
+        memset(c, 0, sizeof(struct _VGSCTX));
         free(c);
     }
 }
@@ -495,7 +495,7 @@ static void unlock_context(struct _VGSCTX* c)
 }
 
 /* set tone and tune */
-static void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n)
+static inline void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n)
 {
     n += c->addKey[cn];
     switch (t) {
@@ -515,7 +515,7 @@ static void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsig
 }
 
 /* get next waittime */
-static int get_next_note(struct _VGSCTX* c)
+static inline int get_next_note(struct _VGSCTX* c)
 {
     int ret;
     if (c->notes[c->nidx].type == NTYPE_WAIT && 0 == c->notes[c->nidx].val) {
