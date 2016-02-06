@@ -108,7 +108,6 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
     int i, j;
     int pw;
     int wav;
-    int cs;
     short* bp;
 
     if (NULL == c || NULL == buf) return;

@@ -1,0 +1,10 @@
+EXPORTS
+	vgsdec_create_context
+	vgsdec_load_bgm_from_file
+	vgsdec_load_bgm_from_memory
+	vgsdec_execute
+	vgsdec_get_value
+	vgsdec_set_value
+	vgsdec_release_context
+	vgsdec_get_meta_header
+	vgsdec_get_meta_data
