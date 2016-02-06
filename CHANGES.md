@@ -2,6 +2,7 @@
 
 ## Version 1.00 (todo: in progress)
 - performance optimizing: https://github.com/suzukiplan/vgs-bgm-decoder/issues/17 
+- complete getter/setter: https://github.com/suzukiplan/vgs-bgm-decoder/issues/19
 
 ## Version 0.03 (beta)
 - support windows: https://github.com/suzukiplan/vgs-bgm-decoder/issues/15 

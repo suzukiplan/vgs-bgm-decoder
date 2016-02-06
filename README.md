@@ -107,6 +107,9 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_VOLUME_RATE_{0~5}`|o|o|get or set the channel volume rate (0~100)|
 |`VGSDEC_REG_VOLUME_RATE`|o|o|get or set the master volume rate (0~100)|
 |`VGSDEC_REG_SYNTHESIS_BUFFER`|o|o|set none-zero: does not clear the buffer when called `vgsdec_execute`|
+|`VGSDEC_REG_KEYON_{0~5}`|o|-|get key-on status of Ch{0~5}: `0` = key-off, `1` = key-on|
+|`VGSDEC_REG_MUTE_{0~5}`|o|o|get or set the mute of Ch{0~5}: `0` = sound, `1` = mute|
+|`VGSDEC_REG_ADD_KEY_{0~5}`|o|o|get or set the scale up/down of Ch{0~5}|
 
 #### scale value
 |Octave|`A`|`A#`|`B`|`C`|`C#`|`D`|`D#`|`E`|`F`|`F#`|`G`|`G#`|
@@ -119,6 +122,11 @@ void vgsdec_set_value(void* context, int type, int value);
 |5|60|61|62|63|64|65|66|67|68|69|70|71|
 |6|72|73|74|75|76|77|78|79|80|81|82|83|
 |7|84|-|-|-|-|-|-|-|-|-|-|-|
+
+#### scale up/down
+- set VGSDEC_REG_ADD_KEY = 5: C major -> F major
+- set VGSDEC_REG_ADD_KEY = -1: C major -> B major
+- please exclude rhythm channel _(but specific rhythm channel is impossible...)_
 
 #### tone value
 |value|name|

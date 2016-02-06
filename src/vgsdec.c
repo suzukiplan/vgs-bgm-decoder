@@ -306,6 +306,42 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->volumeRate;
         case VGSDEC_REG_SYNTHESIS_BUFFER:
             return c->synthesis;
+        case VGSDEC_REG_KEYON_0:
+            return c->ch[0].keyOn;
+        case VGSDEC_REG_KEYON_1:
+            return c->ch[1].keyOn;
+        case VGSDEC_REG_KEYON_2:
+            return c->ch[2].keyOn;
+        case VGSDEC_REG_KEYON_3:
+            return c->ch[3].keyOn;
+        case VGSDEC_REG_KEYON_4:
+            return c->ch[4].keyOn;
+        case VGSDEC_REG_KEYON_5:
+            return c->ch[5].keyOn;
+        case VGSDEC_REG_MUTE_0:
+            return c->ch[0].mute;
+        case VGSDEC_REG_MUTE_1:
+            return c->ch[1].mute;
+        case VGSDEC_REG_MUTE_2:
+            return c->ch[2].mute;
+        case VGSDEC_REG_MUTE_3:
+            return c->ch[3].mute;
+        case VGSDEC_REG_MUTE_4:
+            return c->ch[4].mute;
+        case VGSDEC_REG_MUTE_5:
+            return c->ch[5].mute;
+        case VGSDEC_REG_ADD_KEY_0:
+            return c->addKey[0];
+        case VGSDEC_REG_ADD_KEY_1:
+            return c->addKey[1];
+        case VGSDEC_REG_ADD_KEY_2:
+            return c->addKey[2];
+        case VGSDEC_REG_ADD_KEY_3:
+            return c->addKey[3];
+        case VGSDEC_REG_ADD_KEY_4:
+            return c->addKey[4];
+        case VGSDEC_REG_ADD_KEY_5:
+            return c->addKey[5];
     }
     return -1;
 }
@@ -349,6 +385,43 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             break;
         case VGSDEC_REG_SYNTHESIS_BUFFER:
             c->synthesis = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_MUTE_0:
+            c->ch[0].mute = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_MUTE_1:
+            c->ch[1].mute = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_MUTE_2:
+            c->ch[2].mute = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_MUTE_3:
+            c->ch[3].mute = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_MUTE_4:
+            c->ch[4].mute = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_MUTE_5:
+            c->ch[5].mute = value ? 1 : 0;
+            break;
+        case VGSDEC_REG_ADD_KEY_0:
+            c->addKey[0] = value;
+            break;
+        case VGSDEC_REG_ADD_KEY_1:
+            c->addKey[1] = value;
+            break;
+        case VGSDEC_REG_ADD_KEY_2:
+            c->addKey[2] = value;
+            break;
+        case VGSDEC_REG_ADD_KEY_3:
+            c->addKey[3] = value;
+            break;
+        case VGSDEC_REG_ADD_KEY_4:
+            c->addKey[4] = value;
+            break;
+        case VGSDEC_REG_ADD_KEY_5:
+            c->addKey[5] = value;
+            break;
     }
     unlock_context(c);
 }
