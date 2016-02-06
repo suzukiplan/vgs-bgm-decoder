@@ -3,11 +3,12 @@
 - platform free
 - __UNDER DEVELOPMENT__
 
-## How to use (draft)
+## How to use
 - Create Context
 - Load BGM data (from file or memory)
+  - _Get Meta Information (optional)_
   - Decode
-  - Get/Set Register
+  - _Get/Set Register (optional)_
 - Release Context
 
 ## Create Context
@@ -29,13 +30,28 @@ int vgsdec_load_bgm_from_memory(void* context, void* data, size_t size);
 
 #### arguments
 - `context` : context
-- `path` : path of the BGM file
-- `data` : pointer of memory area that BGM file data stored.
-- `size` : size of the BGM file
+- `path` : path of the .BGM or .vgs file
+- `data` : pointer of memory area that BGM or .vgs file data stored.
+- `size` : size of the .BGM or .vgs file
 
 #### return value
 - `0` : success
 - `-1` : failed
+
+## Get Meta Information
+#### prototyping
+```
+struct VgsMetaHeader* vgsdec_get_meta_header(void* context);
+struct VgsMetaData* vgsdec_get_meta_data(void* context, int index);
+```
+
+#### arguments
+- `context` : context
+- `index` : index of the meta data
+
+#### return value
+- NULL: if meta header or data is not exist.
+- !NULL: meta header or data
 
 ## Decode
 #### prototyping
