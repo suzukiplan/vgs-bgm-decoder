@@ -44,15 +44,14 @@ static char* sec(int hz)
     return result;
 }
 
+static void dump(void* context);
+
 int main(int argc, char* argv[])
 {
     char buf[1024];
     void* context;
     FILE* wav;
     struct DataHeader dh;
-    int i;
-    struct VgsMetaHeader* mhead;
-    struct VgsMetaData* mdata;
 
     if (argc < 3) {
         puts("usage: decoder bgm_file wav_file");
@@ -97,47 +96,7 @@ int main(int argc, char* argv[])
     dh.dsize = 0;
     fwrite(&dh, 1, sizeof(dh), wav);
 
-    /* show meta header if exist */
-    mhead = vgsdec_get_meta_header(context);
-    printf("META-HEADER: ");
-    if (NULL != mhead) {
-        printf("\n");
-        printf(" - format: %s\n", mhead->format);
-        printf(" - genre: %s\n", mhead->genre);
-        printf(" - data count: %d\n", (int)mhead->num);
-    } else {
-        printf("n/a\n");
-    }
-
-    /* show meta data if exist */
-    for (i = 0; NULL != (mdata = vgsdec_get_meta_data(context, i)); i++) {
-        printf("META-DATA #%d:\n", i + 1);
-        printf(" - year: %d\n", (int)mdata->year);
-        printf(" - aid: %d\n", (int)mdata->aid);
-        printf(" - track: %d\n", (int)mdata->track);
-        printf(" - album: %s\n", mdata->album);
-        printf(" - song: %s\n", mdata->song);
-        printf(" - team: %s\n", mdata->team);
-        printf(" - creator: %s\n", mdata->creator);
-        printf(" - right: %s\n", mdata->right);
-        printf(" - code: %s\n", mdata->code);
-    }
-
-    /* show length info */
-    printf("NUMBER OF NOTES: %d\n", vgsdec_get_value(context, VGSDEC_REG_LENGTH));
-    printf("LOOP-INDEX: %d\n", vgsdec_get_value(context, VGSDEC_REG_LOOP_INDEX));
-    printf("TIME: %s\n", sec(vgsdec_get_value(context, VGSDEC_REG_TIME_LENGTH)));
-    printf("LOOP: %s\n", sec(vgsdec_get_value(context, VGSDEC_REG_LOOP_TIME)));
-
-    /* set channel volume */
-    for (i = 0; i < 6; i++) {
-        vgsdec_set_value(context, VGSDEC_REG_VOLUME_RATE_0 + i, 100);
-        printf("CHANNEL-VOLUME #%d: %d\n", i, vgsdec_get_value(context, VGSDEC_REG_VOLUME_RATE_0 + i));
-    }
-
-    /* master volume */
-    vgsdec_set_value(context, VGSDEC_REG_VOLUME_RATE, 100);
-    printf("MASTER-VOLUME: %d\n", vgsdec_get_value(context, VGSDEC_REG_VOLUME_RATE));
+    dump(context);
 
     /* decoding loop */
     while (vgsdec_get_value(context, VGSDEC_REG_PLAYING) && vgsdec_get_value(context, VGSDEC_REG_LOOP_COUNT) == 0) {
@@ -170,4 +129,76 @@ int main(int argc, char* argv[])
         }
     }
     return 0;
+}
+
+static void dump(void* context)
+{
+    int i, v;
+    struct VgsMetaHeader* mhead;
+    struct VgsMetaData* mdata;
+
+    /* meta header if exist */
+    mhead = vgsdec_get_meta_header(context);
+    printf("META-HEADER: ");
+    if (NULL != mhead) {
+        printf("\n");
+        printf(" - format: %s\n", mhead->format);
+        printf(" - genre: %s\n", mhead->genre);
+        printf(" - data count: %d\n", (int)mhead->num);
+    } else {
+        printf("n/a\n");
+    }
+
+    /* meta data if exist */
+    for (i = 0; NULL != (mdata = vgsdec_get_meta_data(context, i)); i++) {
+        printf("META-DATA #%d:\n", i + 1);
+        printf(" - year: %d\n", (int)mdata->year);
+        printf(" - aid: %d\n", (int)mdata->aid);
+        printf(" - track: %d\n", (int)mdata->track);
+        printf(" - album: %s\n", mdata->album);
+        printf(" - song: %s\n", mdata->song);
+        printf(" - team: %s\n", mdata->team);
+        printf(" - creator: %s\n", mdata->creator);
+        printf(" - right: %s\n", mdata->right);
+        printf(" - code: %s\n", mdata->code);
+    }
+
+    /* length info */
+    printf("NUMBER OF NOTES: %d\n", vgsdec_get_value(context, VGSDEC_REG_LENGTH));
+    printf("LOOP-INDEX: %d\n", vgsdec_get_value(context, VGSDEC_REG_LOOP_INDEX));
+    printf("TIME: %s\n", sec(vgsdec_get_value(context, VGSDEC_REG_TIME_LENGTH)));
+    printf("LOOP-START: %s\n", sec(vgsdec_get_value(context, VGSDEC_REG_LOOP_TIME)));
+
+    /* channel volume */
+    printf("CHANNEL-VOLUME:");
+    for (i = 0; i < 6; i++) {
+        vgsdec_set_value(context, VGSDEC_REG_VOLUME_RATE_0 + i, 100);
+        if (i) printf(",");
+        printf(" CH%d=%d", i, vgsdec_get_value(context, VGSDEC_REG_VOLUME_RATE_0 + i));
+    }
+    printf("\n");
+
+    /* master volume */
+    vgsdec_set_value(context, VGSDEC_REG_VOLUME_RATE, 100);
+    printf("MASTER-VOLUME: %d\n", vgsdec_get_value(context, VGSDEC_REG_VOLUME_RATE));
+
+    /* channel mute */
+    printf("CHANNEL-MUTE:");
+    for (i = 0; i < 6; i++) {
+        vgsdec_set_value(context, VGSDEC_REG_MUTE_0 + i, 0);
+        /* vgsdec_set_value(context, VGSDEC_REG_MUTE_0 + i, (i == 0 || i == 1) ? 1 : 0); // ex: mute melody */
+        if (i) printf(",");
+        printf(" CH%d=%d", i, vgsdec_get_value(context, VGSDEC_REG_MUTE_0 + i));
+    }
+    printf("\n");
+
+    /* scale up/down */
+    printf("SCALE:");
+    for (i = 0; i < 6; i++) {
+        vgsdec_set_value(context, VGSDEC_REG_ADD_KEY_0 + i, -1);
+        if (i) printf(",");
+        v = vgsdec_get_value(context, VGSDEC_REG_ADD_KEY_0 + i);
+        printf(" CH%d=%s%d", i, v < 0 ? "" : "+", v);
+    }
+    printf("\n");
 }
