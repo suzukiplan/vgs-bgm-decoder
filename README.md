@@ -136,3 +136,15 @@ void vgsdec_release_context(void* context);
 
 #### arguments
 - `context` : context
+
+## Build
+### example decoder
+```
+$ cd example
+$ make
+```
+
+### DLL (Windows only)
+```
+# nmake /f makedll.mak
+```
