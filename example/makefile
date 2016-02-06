@@ -5,3 +5,8 @@ all: decoder
 decoder: decoder.c ../src/vgs2tone.c ../src/vgsdec.c
 	$(CC) -o decoder -I../src decoder.c ../src/vgs2tone.c ../src/vgsdec.c -lpthread
 
+test: decoder
+	vgs2mml test.mml test.bgm
+	./decoder test.bgm test.wav
+	open test.wav
+

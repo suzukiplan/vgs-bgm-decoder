@@ -7,6 +7,8 @@
  */
 #include "vgsdec_internal.h"
 
+#define ROUND(X, MIN, MAX) (X < MIN ? MIN : MAX < X ? MAX : X)
+
 /*
  *----------------------------------------------------------------------------
  * Interface functions
@@ -227,8 +229,6 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
 
 int __stdcall vgsdec_get_value(void* context, int type)
 {
-    // todo: need getter of master volumeRate
-    // todo: need getter of chnnel volumeRate
     struct _CONTEXT* c = (struct _CONTEXT*)context;
     if (NULL == c) return -1;
     switch (type) {
@@ -284,14 +284,26 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->timeL;
         case VGSDEC_REG_LOOP_COUNT:
             return c->loop;
+        case VGSDEC_REG_VOLUME_RATE_0:
+            return c->ch[0].volumeRate;
+        case VGSDEC_REG_VOLUME_RATE_1:
+            return c->ch[1].volumeRate;
+        case VGSDEC_REG_VOLUME_RATE_2:
+            return c->ch[2].volumeRate;
+        case VGSDEC_REG_VOLUME_RATE_3:
+            return c->ch[3].volumeRate;
+        case VGSDEC_REG_VOLUME_RATE_4:
+            return c->ch[4].volumeRate;
+        case VGSDEC_REG_VOLUME_RATE_5:
+            return c->ch[5].volumeRate;
+        case VGSDEC_REG_VOLUME_RATE:
+            return c->volumeRate;
     }
     return -1;
 }
 
 void __stdcall vgsdec_set_value(void* context, int type, int value)
 {
-    // todo: need setter of master volumeRate
-    // todo: need setter of chnnel volumeRate
     struct _CONTEXT* c = (struct _CONTEXT*)context;
 
     if (NULL == c) return;
@@ -305,6 +317,27 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             break;
         case VGSDEC_REG_RESET:
             if (value) reset_context(c);
+            break;
+        case VGSDEC_REG_VOLUME_RATE_0:
+            c->ch[0].volumeRate = ROUND(value, 0, 100);
+            break;
+        case VGSDEC_REG_VOLUME_RATE_1:
+            c->ch[1].volumeRate = ROUND(value, 0, 100);
+            break;
+        case VGSDEC_REG_VOLUME_RATE_2:
+            c->ch[2].volumeRate = ROUND(value, 0, 100);
+            break;
+        case VGSDEC_REG_VOLUME_RATE_3:
+            c->ch[3].volumeRate = ROUND(value, 0, 100);
+            break;
+        case VGSDEC_REG_VOLUME_RATE_4:
+            c->ch[4].volumeRate = ROUND(value, 0, 100);
+            break;
+        case VGSDEC_REG_VOLUME_RATE_5:
+            c->ch[5].volumeRate = ROUND(value, 0, 100);
+            break;
+        case VGSDEC_REG_VOLUME_RATE:
+            c->volumeRate = ROUND(value, 0, 100);
             break;
     }
     unlock_context(c);
