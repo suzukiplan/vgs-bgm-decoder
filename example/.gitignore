@@ -1,4 +1,7 @@
+decoder
+decoder_async
 test.wav
+test2.wav
 test.bgm
 test.vgs
 *.exe
