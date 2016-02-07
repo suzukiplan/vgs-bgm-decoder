@@ -1,4 +1,5 @@
 test-general
 test-reload
+test-mt
 *.dSYM
 
