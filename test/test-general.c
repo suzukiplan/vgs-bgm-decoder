@@ -39,7 +39,6 @@ int main(int argc, char* argv[])
         }
     }
     vgsdec_release_context(context);
-	puts("DONE");
+    puts("DONE");
     return 0;
 }
-
