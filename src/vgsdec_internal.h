@@ -131,4 +131,8 @@ static void jump_time(struct _VGSCTX* c, int sec);
 static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size);
 static void release_meta_data(struct _VGSCTX* c);
 static void msleep(int ms);
+#ifdef _WIN32
+static unsigned __stdcall async_manager(void* context);
+#else
 static void* async_manager(void* context);
+#endif

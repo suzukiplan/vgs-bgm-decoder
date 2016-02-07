@@ -8,6 +8,11 @@
 #include "vgsdec_internal.h"
 
 #define ROUND(X, MIN, MAX) (X < MIN ? MIN : MAX < X ? MAX : X)
+#ifdef _WIN32
+#define VGS_STACK_SIZE 1048576
+#else
+#define VGS_STACK_SIZE (1048576 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN : 1048576)
+#endif
 
 /*
  *----------------------------------------------------------------------------
@@ -27,7 +32,7 @@ void* __stdcall vgsdec_create_context()
     pthread_mutex_init(&(result->mt), NULL);
     pthread_mutex_init(&(result->queue.mt), NULL);
     pthread_attr_init(&(result->queue.ta));
-    pthread_attr_setstacksize(&(result->queue.ta), 1048576 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN : 1048576);
+    pthread_attr_setstacksize(&(result->queue.ta), VGS_STACK_SIZE);
 #endif
     return result;
 }
@@ -472,14 +477,17 @@ int __stdcall vgsdec_async_start(void* context)
     struct _VGSCTX* c = (struct _VGSCTX*)context;
     if (NULL == c || c->queue.enabled) return -1;
 #ifdef _WIN32
-    todo;
+    c->queue.tid = _beginthreadex(NULL, VGS_STACK_SIZE, async_manager, context, 0, NULL);
+    if (-1L == c->queue.tid) {
+        return -1;
+    }
 #else
     if (pthread_create(&(c->queue.tid), &(c->queue.ta), async_manager, context)) {
         return -1;
     }
+#endif
     c->queue.enabled = 1;
     return 0;
-#endif
 }
 
 int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size))
@@ -528,7 +536,8 @@ void __stdcall vgsdec_async_stop(void* context)
     unlock_context(c);
     unlock_queue(c);
 #ifdef _WIN32
-    todo;
+    WaitForSingleObject(c->queue.tid, INFINITE);
+    CloseHandle(c->queue.tid);
 #else
     pthread_join(c->queue.tid, NULL);
 #endif
@@ -769,7 +778,11 @@ static void msleep(int ms)
 }
 
 /* async decode manager */
+#ifdef _WIN32
+static unsigned __stdcall async_manager(void* context)
+#else
 static void* async_manager(void* context)
+#endif
 {
     struct _VGSCTX* c = (struct _VGSCTX*)context;
     struct _VGS_QDATA* data;
@@ -800,5 +813,10 @@ static void* async_manager(void* context)
         data->callback(c, data->data, data->size);
         free(data);
     }
+#ifdef _WIN32
+    _endthreadex(0);
+    return 0;
+#else
     return NULL;
+#endif
 }
