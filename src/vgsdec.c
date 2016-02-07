@@ -8,6 +8,11 @@
 #include "vgsdec_internal.h"
 
 #define ROUND(X, MIN, MAX) (X < MIN ? MIN : MAX < X ? MAX : X)
+#ifdef _WIN32
+#define VGS_STACK_SIZE 1048576
+#else
+#define VGS_STACK_SIZE (1048576 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN : 1048576)
+#endif
 
 /*
  *----------------------------------------------------------------------------
@@ -22,8 +27,12 @@ void* __stdcall vgsdec_create_context()
     memset(result, 0, sizeof(struct _VGSCTX));
 #ifdef _WIN32
     InitializeCriticalSection(&(result->cs));
+    InitializeCriticalSection(&(result->queue.cs));
 #else
     pthread_mutex_init(&(result->mt), NULL);
+    pthread_mutex_init(&(result->queue.mt), NULL);
+    pthread_attr_init(&(result->queue.ta));
+    pthread_attr_setstacksize(&(result->queue.ta), VGS_STACK_SIZE);
 #endif
     return result;
 }
@@ -290,6 +299,8 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->timeL;
         case VGSDEC_REG_LOOP_COUNT:
             return c->loop;
+        case VGSDEC_REG_FADEOUT_COUNTER:
+            return c->fade2;
         case VGSDEC_REG_VOLUME_RATE_0:
             return c->ch[0].volumeRate;
         case VGSDEC_REG_VOLUME_RATE_1:
@@ -431,10 +442,14 @@ void __stdcall vgsdec_release_context(void* context)
     struct _VGSCTX* c = (struct _VGSCTX*)context;
 
     if (NULL != c) {
+        vgsdec_async_stop(c);
 #ifdef _WIN32
         DeleteCriticalSection(&(c->cs));
+        DeleteCriticalSection(&(c->queue.cs));
 #else
         pthread_mutex_destroy(&(c->mt));
+        pthread_mutex_destroy(&(c->queue.mt));
+        pthread_attr_destroy(&(c->queue.ta));
 #endif
         release_meta_data(c);
         memset(c, 0, sizeof(struct _VGSCTX));
@@ -455,6 +470,86 @@ struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index)
     if (NULL == c || NULL == c->mhead || NULL == c->mdata || index < 0) return NULL;
     if (c->mhead->num <= index) return NULL;
     return c->mdata[index];
+}
+
+int __stdcall vgsdec_async_start(void* context)
+{
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
+    if (NULL == c || c->queue.enabled) return -1;
+#ifdef _WIN32
+    c->queue.tid = _beginthreadex(NULL, VGS_STACK_SIZE, async_manager, context, 0, NULL);
+    if (-1L == c->queue.tid) {
+        return -1;
+    }
+#else
+    if (pthread_create(&(c->queue.tid), &(c->queue.ta), async_manager, context)) {
+        return -1;
+    }
+#endif
+    c->queue.enabled = 1;
+    return 0;
+}
+
+int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size))
+{
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
+    struct _VGS_QDATA* qdata;
+    if (NULL == c || !c->queue.enabled || NULL == data || size < 1) return -1;
+
+    /* allocate and set */
+    qdata = (struct _VGS_QDATA*)malloc(sizeof(struct _VGS_QDATA));
+    if (NULL == qdata) return -1;
+    qdata->next = NULL;
+    qdata->callback = callback;
+    qdata->context = context;
+    qdata->data = data;
+    qdata->size = size;
+
+    /* enqueue */
+    lock_queue(c);
+    if (c->queue.enabled) {
+        if (NULL == c->queue.tail) {
+            c->queue.head = qdata;
+            c->queue.tail = qdata;
+        } else {
+            c->queue.tail->next = qdata;
+            c->queue.tail = qdata;
+        }
+        c->queue.count++;
+    } else {
+        free(qdata);
+    }
+    unlock_queue(c);
+    return 0;
+}
+
+void __stdcall vgsdec_async_stop(void* context)
+{
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
+    struct _VGS_QDATA* cur;
+    struct _VGS_QDATA* next;
+    if (NULL == c || !c->queue.enabled) return;
+
+    lock_queue(c);        /* stop another dequeue */
+    lock_context(c);      /* waiting for executing async-decode */
+    c->queue.enabled = 0; /* reset (set end-flag) */
+    unlock_context(c);
+    unlock_queue(c);
+#ifdef _WIN32
+    WaitForSingleObject((HANDLE)c->queue.tid, INFINITE);
+    CloseHandle((HANDLE)c->queue.tid);
+#else
+    pthread_join(c->queue.tid, NULL);
+#endif
+
+    /* purge */
+    for (cur = c->queue.head; cur; cur = next) {
+        next = cur->next;
+        free(cur);
+    }
+    c->queue.head = NULL;
+    c->queue.tail = NULL;
+    c->queue.count = 0;
 }
 
 /*
@@ -567,6 +662,24 @@ static void unlock_context(struct _VGSCTX* c)
 #endif
 }
 
+static void lock_queue(struct _VGSCTX* c)
+{
+#ifdef _WIN32
+    EnterCriticalSection(&(c->queue.cs));
+#else
+    pthread_mutex_lock(&(c->queue.mt));
+#endif
+}
+
+static void unlock_queue(struct _VGSCTX* c)
+{
+#ifdef _WIN32
+    LeaveCriticalSection(&(c->queue.cs));
+#else
+    pthread_mutex_unlock(&(c->queue.mt));
+#endif
+}
+
 /* set tone and tune */
 static inline void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n)
 {
@@ -653,4 +766,57 @@ static void jump_time(struct _VGSCTX* c, int sec)
         if (0 == wt) break;
         sec -= wt;
     }
+}
+
+static void msleep(int ms)
+{
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
+}
+
+/* async decode manager */
+#ifdef _WIN32
+static unsigned __stdcall async_manager(void* context)
+#else
+static void* async_manager(void* context)
+#endif
+{
+    struct _VGSCTX* c = (struct _VGSCTX*)context;
+    struct _VGS_QDATA* data;
+    while (c->queue.enabled) {
+        /* dequeue */
+        lock_queue(c);
+        if (0 == c->queue.count) {
+            data = NULL;
+        } else {
+            data = c->queue.head;
+            if (c->queue.head == c->queue.tail) {
+                c->queue.head = NULL;
+                c->queue.tail = NULL;
+            } else {
+                c->queue.head = c->queue.head->next;
+            }
+            data->next = NULL;
+            c->queue.count--;
+        }
+        unlock_queue(c);
+        /* sleep if empty */
+        if (NULL == data) {
+            msleep(5);
+            continue;
+        }
+        /* decode */
+        vgsdec_execute(c, data->data, data->size);
+        data->callback(c, data->data, data->size);
+        free(data);
+    }
+#ifdef _WIN32
+    _endthreadex(0);
+    return 0;
+#else
+    return NULL;
+#endif
 }

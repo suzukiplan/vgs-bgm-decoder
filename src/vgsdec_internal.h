@@ -8,8 +8,12 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
+#include <process.h>
+#define inline
 #else
 #include <pthread.h>
+#include <unistd.h>
+#include <limits.h>
 #include <arpa/inet.h>
 #endif
 #include <stdio.h>
@@ -55,6 +59,29 @@ struct _PSGCH {
     int volumeRate;
 };
 
+struct _VGS_QDATA {
+    struct _VGS_QDATA* next;
+    void (*callback)(void* context, void* data, size_t size);
+    void* context;
+    void* data;
+    size_t size;
+};
+
+struct _VGS_QUEUE {
+    volatile int enabled;
+    volatile int count;
+#ifdef _WIN32
+    CRITICAL_SECTION cs;
+    uintptr_t tid;
+#else
+    pthread_mutex_t mt;
+    pthread_attr_t ta;
+    pthread_t tid;
+#endif
+    struct _VGS_QDATA* head;
+    struct _VGS_QDATA* tail;
+};
+
 struct _VGSCTX {
 #ifdef _WIN32
     CRITICAL_SECTION cs;
@@ -86,6 +113,7 @@ struct _VGSCTX {
     int idxnum;
     int volumeRate;
     int synthesis;
+    struct _VGS_QUEUE queue;
 };
 
 extern short* TONE1[85];
@@ -96,8 +124,16 @@ extern short* TONE4[85];
 static void reset_context(struct _VGSCTX* c);
 static void lock_context(struct _VGSCTX* c);
 static void unlock_context(struct _VGSCTX* c);
+static void lock_queue(struct _VGSCTX* c);
+static void unlock_queue(struct _VGSCTX* c);
 static inline void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n);
 static inline int get_next_note(struct _VGSCTX* c);
 static void jump_time(struct _VGSCTX* c, int sec);
 static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size);
 static void release_meta_data(struct _VGSCTX* c);
+static void msleep(int ms);
+#ifdef _WIN32
+static unsigned __stdcall async_manager(void* context);
+#else
+static void* async_manager(void* context);
+#endif

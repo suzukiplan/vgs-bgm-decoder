@@ -1,5 +1,4 @@
 .DS_Store
-example/decoder
 *.exe
 *.dll
 *.pdb

@@ -53,7 +53,7 @@ struct VgsMetaData* vgsdec_get_meta_data(void* context, int index);
 - NULL: if meta header or data is not exist.
 - !NULL: meta header or data
 
-## Decode
+## Decode (BASIC)
 #### prototyping
 ```
 void vgsdec_execute(void* context, void* buffer, size_t size);
@@ -73,6 +73,38 @@ void vgsdec_execute(void* context, void* buffer, size_t size);
 - ex: 1 second = 44100 byte _(22050 * 16 * 1 / 8)_
 - use to sequentially call
 
+## Decode (ASYNC)
+_Async decoder function provides only for the senior programmer that fully understanding both of multiple threading mechanism and `vgsdec.c`. Please DO NOT USE, if you cannot the both or the either._
+
+#### prototyping
+```
+int vgsdec_async_start(void* context);
+int vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+void vgsdec_async_stop(void* context);
+```
+
+- `vgsdec_async_start` function
+  - start async decoder thread
+- `vgsdec_async_enqueue` function
+  - enqueue a decode task
+- `callback` function:
+  - called by async decoder thread after decoded.
+- `vgsdec_async_stop` function
+  - stop async decoder thread
+
+#### arguments
+- `context` : context
+- `data` : input/output buffer
+- `size` : size of `data`
+- `callback` : function pointer of callback after decoded
+
+#### return value
+- `0` : success
+- `-1` : failed
+
+#### remarks
+- you must not call `vgsdec_execute` while running async decoder thread.
+
 ## Get/Set Register
 #### prototyping
 ```
@@ -91,8 +123,8 @@ void vgsdec_set_value(void* context, int type, int value);
 #### type
 |define|get|set|description|
 |:---|:---:|:---:|:---|
-|`VGSDEC_REG_KEY_{0~5}`|o|-|get the scale value of Ch{0~5}|
-|`VGSDEC_REG_TONE_{0~5}`|o|-|get the tone value of Ch{0~5}|
+|`VGSDEC_REG_KEY_{0~5}`|o|-|get the [scale value](#scale-value) of Ch{0~5}|
+|`VGSDEC_REG_TONE_{0~5}`|o|-|get the [tone value](#tone-value) of Ch{0~5}|
 |`VGSDEC_REG_VOL_{0~5}`|o|-|get the average volume of Ch{0~5}|
 |`VGSDEC_REG_PLAYING`|o|-|current playing status: `0` = not playing, `1` = playing|
 |`VGSDEC_REG_INDEX`|o|-|get the playing note-index|
@@ -104,12 +136,13 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_LOOP_COUNT`|o|-|get the loop-count|
 |`VGSDEC_REG_RESET`|-|o|set none-zero: reset to the state after loading the data.|
 |`VGSDEC_REG_FADEOUT`|-|o|set none-zero: start fadeout.|
+|`VGSDEC_REG_FADEOUT_COUNT`|o|-|get fadeout counter: 0 = noop, 1~99 = in-progress, 100 = finished|
 |`VGSDEC_REG_VOLUME_RATE_{0~5}`|o|o|get or set the channel volume rate (0~100)|
 |`VGSDEC_REG_VOLUME_RATE`|o|o|get or set the master volume rate (0~100)|
 |`VGSDEC_REG_SYNTHESIS_BUFFER`|o|o|set none-zero: does not clear the buffer when called `vgsdec_execute`|
 |`VGSDEC_REG_KEYON_{0~5}`|o|-|get key-on status of Ch{0~5}: `0` = key-off, `1` = key-on|
 |`VGSDEC_REG_MUTE_{0~5}`|o|o|get or set the mute of Ch{0~5}: `0` = sound, `1` = mute|
-|`VGSDEC_REG_ADD_KEY_{0~5}`|o|o|get or set the scale up/down of Ch{0~5}|
+|`VGSDEC_REG_ADD_KEY_{0~5}`|o|o|get or set the [scale up/down](#scale-updown) of Ch{0~5}|
 
 #### scale value
 |Octave|`A`|`A#`|`B`|`C`|`C#`|`D`|`D#`|`E`|`F`|`F#`|`G`|`G#`|
