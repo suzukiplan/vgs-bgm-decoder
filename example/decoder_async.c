@@ -1,5 +1,6 @@
 /* decoder sample (draft) */
 #ifdef _WIN32
+#include <windows.h>
 #include <io.h>
 #else
 #include <unistd.h>
@@ -37,6 +38,13 @@ static void callback(void* context, void* data, size_t size);
 static FILE* wav;
 static struct DataHeader dh;
 static volatile int err_flag;
+
+#ifdef _WIN32
+static void usleep(int us)
+{
+    Sleep(us / 1000);
+}
+#endif
 
 int main(int argc, char* argv[])
 {
