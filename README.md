@@ -53,7 +53,7 @@ struct VgsMetaData* vgsdec_get_meta_data(void* context, int index);
 - NULL: if meta header or data is not exist.
 - !NULL: meta header or data
 
-## Decode
+## Decode (BASIC)
 #### prototyping
 ```
 void vgsdec_execute(void* context, void* buffer, size_t size);
@@ -72,6 +72,38 @@ void vgsdec_execute(void* context, void* buffer, size_t size);
   - channels: 1 (monoral)
 - ex: 1 second = 44100 byte _(22050 * 16 * 1 / 8)_
 - use to sequentially call
+
+## Decode (ASYNC)
+_Async decoder function provides only for the senior programmer that fully understanding both of multiple threading mechanism and `vgsdec.c`. Please DO NOT USE, if you cannot the both or the either._
+
+#### prototyping
+```
+int vgsdec_async_start(void* context);
+int vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+void vgsdec_async_stop(void* context);
+```
+
+- `vgsdec_async_start` function
+  - start async decoder thread
+- `vgsdec_async_enqueue` function
+  - enqueue a decode task
+- `callback` function:
+  - called by async decoder thread after decoded.
+- `vgsdec_async_stop` function
+  - stop async decoder thread
+
+#### arguments
+- `context` : context
+- `data` : input/output buffer
+- `size` : size of `data`
+- `callback` : function pointer of callback after decoded
+
+#### return value
+- `0` : success
+- `-1` : failed
+
+#### remarks
+- you must not call `vgsdec_execute` while running async decoder thread.
 
 ## Get/Set Register
 #### prototyping
