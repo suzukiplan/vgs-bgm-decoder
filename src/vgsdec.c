@@ -27,7 +27,7 @@ void* __stdcall vgsdec_create_context()
     pthread_mutex_init(&(result->mt), NULL);
     pthread_mutex_init(&(result->queue.mt), NULL);
     pthread_attr_init(&(result->queue.ta));
-    pthread_attr_setstacksize(&(result->queue.ta), 65536 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN : 65536);
+    pthread_attr_setstacksize(&(result->queue.ta), 1048576 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN : 1048576);
 #endif
     return result;
 }
