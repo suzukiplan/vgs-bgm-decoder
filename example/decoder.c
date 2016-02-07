@@ -1,4 +1,4 @@
-/* decoder sample (draft) */
+/* basic decoder sample */
 #ifdef _WIN32
 #include <io.h>
 #else

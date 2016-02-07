@@ -1,4 +1,4 @@
-/* decoder sample (draft) */
+/* async decoder sample */
 #ifdef _WIN32
 #include <windows.h>
 #include <io.h>
