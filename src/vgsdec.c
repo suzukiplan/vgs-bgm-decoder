@@ -294,6 +294,8 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->timeL;
         case VGSDEC_REG_LOOP_COUNT:
             return c->loop;
+        case VGSDEC_REG_FADEOUT_COUNTER:
+            return c->fade2;
         case VGSDEC_REG_VOLUME_RATE_0:
             return c->ch[0].volumeRate;
         case VGSDEC_REG_VOLUME_RATE_1:

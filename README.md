@@ -104,6 +104,7 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_LOOP_COUNT`|o|-|get the loop-count|
 |`VGSDEC_REG_RESET`|-|o|set none-zero: reset to the state after loading the data.|
 |`VGSDEC_REG_FADEOUT`|-|o|set none-zero: start fadeout.|
+|`VGSDEC_REG_FADEOUT_COUNT`|o|-|get fadeout counter: 0 = noop, 1~99 = in-progress, 100 = finished|
 |`VGSDEC_REG_VOLUME_RATE_{0~5}`|o|o|get or set the channel volume rate (0~100)|
 |`VGSDEC_REG_VOLUME_RATE`|o|o|get or set the master volume rate (0~100)|
 |`VGSDEC_REG_SYNTHESIS_BUFFER`|o|o|set none-zero: does not clear the buffer when called `vgsdec_execute`|
