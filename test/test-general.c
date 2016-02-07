@@ -1,4 +1,3 @@
-/* basic decoder sample */
 #include <stdio.h>
 #include <string.h>
 #include "vgsdec.h"
