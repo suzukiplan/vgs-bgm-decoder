@@ -1,6 +1,9 @@
 CC=/usr/bin/gcc
 
-all: test-general 
+all: clean test-general 
+
+clean:
+	-@rm -f ./test-general
 
 test-general:
 	@echo ===== general test =====
