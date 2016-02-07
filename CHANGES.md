@@ -4,6 +4,7 @@
 - support async decoding: https://github.com/suzukiplan/vgs-bgm-decoder/issues/2
 - performance optimizing: https://github.com/suzukiplan/vgs-bgm-decoder/issues/17 
 - complete getter/setter: https://github.com/suzukiplan/vgs-bgm-decoder/issues/19
+- added test: https://github.com/suzukiplan/vgs-bgm-decoder/issues/20
 
 ## Version 0.03 (beta)
 - support windows: https://github.com/suzukiplan/vgs-bgm-decoder/issues/15 
