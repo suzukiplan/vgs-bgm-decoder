@@ -24,5 +24,5 @@ test-reload:
 test-mt:
 	@echo ===== multiple thread test =====
 	$(CC) -O2 -o test-mt -I../src test-mt.c ../src/vgs2tone.c ../src/vgsdec.c -lpthread
-	valgrind --tool=memcheck ./test-mt test.vgs
+	time ./test-mt test.vgs
 
