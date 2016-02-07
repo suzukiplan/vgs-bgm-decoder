@@ -97,6 +97,7 @@ struct VgsMetaData {
     char code[32];
 };
 
+/* BAISC functions */
 void* __stdcall vgsdec_create_context();
 int __stdcall vgsdec_load_bgm_from_file(void* context, const char* path);
 int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size);
@@ -106,6 +107,12 @@ void __stdcall vgsdec_set_value(void* context, int type, int value);
 void __stdcall vgsdec_release_context(void* context);
 struct VgsMetaHeader* __stdcall vgsdec_get_meta_header(void* context);
 struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index);
+
+/* EXTRA function: async-decoder */
+/* NOTE: must not call vgsdec_execute if using async-decoder. */
+int __stdcall vgsdec_async_start(void* context);
+int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+void __stdcall vgsdec_async_stop(void* context);
 
 #ifdef __cplusplus
 };
