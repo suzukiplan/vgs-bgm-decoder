@@ -1,7 +1,6 @@
 # VGS BGM Decoder
 - decodes: `VGS's .BGM file` to `PCM`
 - platform free
-- __UNDER DEVELOPMENT__
 
 ## License
 [The BSD 2-Clause License](https://github.com/suzukiplan/vgs-bgm-decoder/blob/master/LICENSE.txt)
