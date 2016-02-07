@@ -3,6 +3,9 @@
 - platform free
 - __UNDER DEVELOPMENT__
 
+## License
+[The BSD 2-Clause License](https://github.com/suzukiplan/vgs-bgm-decoder/blob/master/LICENSE.txt)
+
 ## How to use
 - Create Context
 - Load BGM data (from file or memory)
