@@ -9,6 +9,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <process.h>
+#define inline
 #else
 #include <pthread.h>
 #include <unistd.h>
