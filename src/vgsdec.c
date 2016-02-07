@@ -536,8 +536,8 @@ void __stdcall vgsdec_async_stop(void* context)
     unlock_context(c);
     unlock_queue(c);
 #ifdef _WIN32
-    WaitForSingleObject(c->queue.tid, INFINITE);
-    CloseHandle(c->queue.tid);
+    WaitForSingleObject((HANDLE)c->queue.tid, INFINITE);
+    CloseHandle((HANDLE)c->queue.tid);
 #else
     pthread_join(c->queue.tid, NULL);
 #endif
