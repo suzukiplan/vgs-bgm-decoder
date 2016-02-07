@@ -123,8 +123,8 @@ void vgsdec_set_value(void* context, int type, int value);
 #### type
 |define|get|set|description|
 |:---|:---:|:---:|:---|
-|`VGSDEC_REG_KEY_{0~5}`|o|-|get the scale value of Ch{0~5}|
-|`VGSDEC_REG_TONE_{0~5}`|o|-|get the tone value of Ch{0~5}|
+|`VGSDEC_REG_KEY_{0~5}`|o|-|get the [scale value](#scale-value) of Ch{0~5}|
+|`VGSDEC_REG_TONE_{0~5}`|o|-|get the [tone value](#tone-value) of Ch{0~5}|
 |`VGSDEC_REG_VOL_{0~5}`|o|-|get the average volume of Ch{0~5}|
 |`VGSDEC_REG_PLAYING`|o|-|current playing status: `0` = not playing, `1` = playing|
 |`VGSDEC_REG_INDEX`|o|-|get the playing note-index|
@@ -142,7 +142,7 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_SYNTHESIS_BUFFER`|o|o|set none-zero: does not clear the buffer when called `vgsdec_execute`|
 |`VGSDEC_REG_KEYON_{0~5}`|o|-|get key-on status of Ch{0~5}: `0` = key-off, `1` = key-on|
 |`VGSDEC_REG_MUTE_{0~5}`|o|o|get or set the mute of Ch{0~5}: `0` = sound, `1` = mute|
-|`VGSDEC_REG_ADD_KEY_{0~5}`|o|o|get or set the scale up/down of Ch{0~5}|
+|`VGSDEC_REG_ADD_KEY_{0~5}`|o|o|get or set the [scale up/down](#scale-updown) of Ch{0~5}|
 
 #### scale value
 |Octave|`A`|`A#`|`B`|`C`|`C#`|`D`|`D#`|`E`|`F`|`F#`|`G`|`G#`|
