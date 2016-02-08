@@ -64,7 +64,7 @@ void vgsdec_execute(void* context, void* buffer, size_t size);
 #### arguments
 - `context` : context
 - `buffer` : stores decoded PCM data
-- `size` : size of buffer
+- `size` : size of `buffer`
 
 #### remarks
 - this function stores decoded PCM data to the buffer.
@@ -81,7 +81,7 @@ _Async decoder function provides only for the senior programmer that fully under
 #### prototyping
 ```
 int vgsdec_async_start(void* context);
-int vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+int vgsdec_async_enqueue(void* context, void* buffer, size_t size, void (*callback)(void* context, void* buffer, size_t size));
 void vgsdec_async_stop(void* context);
 ```
 
@@ -96,8 +96,8 @@ void vgsdec_async_stop(void* context);
 
 #### arguments
 - `context` : context
-- `data` : input/output buffer
-- `size` : size of `data`
+- `buffer` : input/output buffer
+- `size` : size of `buffer`
 - `callback` : function pointer of callback after decoded
 
 #### return value
