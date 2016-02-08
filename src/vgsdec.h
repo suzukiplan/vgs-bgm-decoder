@@ -64,10 +64,6 @@
 #define VGSDEC_REG_ADD_KEY_4 0x604
 #define VGSDEC_REG_ADD_KEY_5 0x605
 
-#ifndef _WIN32
-#define __stdcall
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -98,7 +94,7 @@ struct VgsMetaData {
     char code[32];
 };
 
-/* BAISC functions */
+#ifdef _WIN32
 void* __stdcall vgsdec_create_context();
 int __stdcall vgsdec_load_bgm_from_file(void* context, const char* path);
 int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size);
@@ -108,12 +104,23 @@ void __stdcall vgsdec_set_value(void* context, int type, int value);
 void __stdcall vgsdec_release_context(void* context);
 struct VgsMetaHeader* __stdcall vgsdec_get_meta_header(void* context);
 struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index);
-
-/* EXTRA function: async-decoder */
-/* NOTE: must not call vgsdec_execute if using async-decoder. */
 int __stdcall vgsdec_async_start(void* context);
 int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
 void __stdcall vgsdec_async_stop(void* context);
+#else
+void* vgsdec_create_context();
+int vgsdec_load_bgm_from_file(void* context, const char* path);
+int vgsdec_load_bgm_from_memory(void* context, void* data, size_t size);
+void vgsdec_execute(void* context, void* buffer, size_t size);
+int vgsdec_get_value(void* context, int type);
+void vgsdec_set_value(void* context, int type, int value);
+void vgsdec_release_context(void* context);
+struct VgsMetaHeader* vgsdec_get_meta_header(void* context);
+struct VgsMetaData* vgsdec_get_meta_data(void* context, int index);
+int vgsdec_async_start(void* context);
+int vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+void vgsdec_async_stop(void* context);
+#endif
 
 #ifdef __cplusplus
 };
