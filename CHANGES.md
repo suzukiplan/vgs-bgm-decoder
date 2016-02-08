@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.01
+- do not declare `#define __stdcall` in the vgsdec.h: https://github.com/suzukiplan/vgs-bgm-decoder/issues/25
+
 ## Version 1.00
 - support async decoding: https://github.com/suzukiplan/vgs-bgm-decoder/issues/2
 - performance optimizing: https://github.com/suzukiplan/vgs-bgm-decoder/issues/17 

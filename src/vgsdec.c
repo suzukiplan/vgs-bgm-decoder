@@ -12,6 +12,7 @@
 #define VGS_STACK_SIZE 1048576
 #else
 #define VGS_STACK_SIZE (1048576 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN : 1048576)
+#define __stdcall
 #endif
 
 /*
