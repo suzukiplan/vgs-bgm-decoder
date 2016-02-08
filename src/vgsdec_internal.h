@@ -61,9 +61,9 @@ struct _PSGCH {
 
 struct _VGS_QDATA {
     struct _VGS_QDATA* next;
-    void (*callback)(void* context, void* data, size_t size);
+    void (*callback)(void* context, void* buffer, size_t size);
     void* context;
-    void* data;
+    void* buffer;
     size_t size;
 };
 

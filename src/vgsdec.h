@@ -105,7 +105,7 @@ void __stdcall vgsdec_release_context(void* context);
 struct VgsMetaHeader* __stdcall vgsdec_get_meta_header(void* context);
 struct VgsMetaData* __stdcall vgsdec_get_meta_data(void* context, int index);
 int __stdcall vgsdec_async_start(void* context);
-int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+int __stdcall vgsdec_async_enqueue(void* context, void* buffer, size_t size, void (*callback)(void* context, void* buffer, size_t size));
 void __stdcall vgsdec_async_stop(void* context);
 #else
 void* vgsdec_create_context();
@@ -118,7 +118,7 @@ void vgsdec_release_context(void* context);
 struct VgsMetaHeader* vgsdec_get_meta_header(void* context);
 struct VgsMetaData* vgsdec_get_meta_data(void* context, int index);
 int vgsdec_async_start(void* context);
-int vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size));
+int vgsdec_async_enqueue(void* context, void* buffer, size_t size, void (*callback)(void* context, void* buffer, size_t size));
 void vgsdec_async_stop(void* context);
 #endif
 

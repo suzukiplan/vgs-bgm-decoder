@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.02
+- correct the notation shaking: data -> buffer: https://github.com/suzukiplan/vgs-bgm-decoder/issues/27
+
 ## Version 1.01
 - do not declare `#define __stdcall` in the vgsdec.h: https://github.com/suzukiplan/vgs-bgm-decoder/issues/25
 

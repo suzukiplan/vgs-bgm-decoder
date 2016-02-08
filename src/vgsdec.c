@@ -491,11 +491,11 @@ int __stdcall vgsdec_async_start(void* context)
     return 0;
 }
 
-int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void (*callback)(void* context, void* data, size_t size))
+int __stdcall vgsdec_async_enqueue(void* context, void* buffer, size_t size, void (*callback)(void* context, void* buffer, size_t size))
 {
     struct _VGSCTX* c = (struct _VGSCTX*)context;
     struct _VGS_QDATA* qdata;
-    if (NULL == c || !c->queue.enabled || NULL == data || size < 1) return -1;
+    if (NULL == c || !c->queue.enabled || NULL == buffer || size < 1) return -1;
 
     /* allocate and set */
     qdata = (struct _VGS_QDATA*)malloc(sizeof(struct _VGS_QDATA));
@@ -503,7 +503,7 @@ int __stdcall vgsdec_async_enqueue(void* context, void* data, size_t size, void 
     qdata->next = NULL;
     qdata->callback = callback;
     qdata->context = context;
-    qdata->data = data;
+    qdata->buffer = buffer;
     qdata->size = size;
 
     /* enqueue */
@@ -810,8 +810,8 @@ static void* async_manager(void* context)
             continue;
         }
         /* decode */
-        vgsdec_execute(c, data->data, data->size);
-        data->callback(c, data->data, data->size);
+        vgsdec_execute(c, data->buffer, data->size);
+        data->callback(c, data->buffer, data->size);
         free(data);
     }
 #ifdef _WIN32
