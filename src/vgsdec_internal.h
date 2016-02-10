@@ -5,6 +5,8 @@
  *      Author: Yoji Suzuki (SUZUKI PLAN)
  *----------------------------------------------------------------------------
  */
+#ifndef INCLUDE_VGSDEC_INTERNAL_H
+#define INCLUDE_VGSDEC_INTERNAL_H
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -137,3 +139,6 @@ static unsigned __stdcall async_manager(void* context);
 #else
 static void* async_manager(void* context);
 #endif
+
+#endif
+

@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.03
+- need include guard in vgsdec_internal.h: https://github.com/suzukiplan/vgs-bgm-decoder/issues/29
+
 ## Version 1.02
 - correct the notation shaking: data -> buffer: https://github.com/suzukiplan/vgs-bgm-decoder/issues/27
 
