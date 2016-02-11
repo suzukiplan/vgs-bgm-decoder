@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.04
+- splits the declaration and code in miniz: https://github.com/suzukiplan/vgs-bgm-decoder/issues/31
+
 ## Version 1.03
 - need include guard in vgsdec_internal.h: https://github.com/suzukiplan/vgs-bgm-decoder/issues/29
 
