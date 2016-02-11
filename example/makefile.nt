@@ -1,10 +1,10 @@
 all: decoder.exe decoder_async.exe
 
-decoder.exe: decoder.c ../src/vgs2tone.c ../src/vgsdec.c
-	CL /MT -I../src decoder.c ../src/vgs2tone.c ../src/vgsdec.c ws2_32.lib
+decoder.exe: decoder.c ../src/vgs2tone.c ../src/vgsdec.c ../src/miniz.c
+	CL /MT -I../src decoder.c ../src/vgs2tone.c ../src/vgsdec.c ../src/miniz.c ws2_32.lib
 
-decoder_async.exe: decoder_async.c ../src/vgs2tone.c ../src/vgsdec.c
-	CL /MT -I../src decoder_async.c ../src/vgs2tone.c ../src/vgsdec.c ws2_32.lib
+decoder_async.exe: decoder_async.c ../src/vgs2tone.c ../src/vgsdec.c ../src/miniz.c
+	CL /MT -I../src decoder_async.c ../src/vgs2tone.c ../src/vgsdec.c ../src/miniz.c ws2_32.lib
 
 test: all 
 	vgs2mml test.mml test.bgm
