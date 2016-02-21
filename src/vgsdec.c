@@ -54,7 +54,7 @@ int __stdcall vgsdec_load_bgm_from_file(void* context, const char* path)
         fclose(fp);
         return -1;
     }
-    size = ftell(fp);
+    size = (int)ftell(fp);
     if (size < 1) {
         fclose(fp);
         return -1;
@@ -88,14 +88,14 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
     if (NULL == c || NULL == data) return -1;
     reset_context(c);
     if (0 == memcmp(data, "VGSPACK", 8)) {
-        int msize = extract_meta_data(c, data, size);
+        size_t msize = extract_meta_data(c, data, size);
         data = ((char*)data) + msize;
         size -= msize;
     }
     nblen = (uLong)sizeof(c->notes);
     memset(c->notes, 0, nblen);
     uncompress((unsigned char*)c->notes, &nblen, (const unsigned char*)data, size);
-    c->idxnum = nblen / sizeof(struct _NOTE);
+    c->idxnum = (int)(nblen / (uLong)sizeof(struct _NOTE));
     if (MAX_NOTES == c->idxnum) {
         return -1;
     }

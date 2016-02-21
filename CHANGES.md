@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.08
+- corrected warning in the 64bit platforms
+
 ## Version 1.07
 - bugfix: crush when setting KOBUSHI mode
 
