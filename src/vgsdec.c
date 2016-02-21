@@ -100,6 +100,8 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
         return -1;
     }
     c->loopIdx = -1;
+    c->timeL = 0;
+    c->timeI = 0;
     for (i = 0; i < c->idxnum; i++) {
         if (NTYPE_WAIT == c->notes[i].type) {
             c->timeL += c->notes[i].val;
@@ -638,8 +640,6 @@ static void reset_context(struct _VGSCTX* c)
     c->volumeRate = 100;
     for (i = 0; i < 6; i++) {
         c->ch[i].volumeRate = 100;
-        c->ch[i].tone = NULL;
-        c->ch[i].toneS = NULL;
     }
     c->hz = 0;
     c->timeP = 0;

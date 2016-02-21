@@ -2,6 +2,7 @@
 
 ## Version 1.06
 - bugfix: reset playing time when context_reset
+- bugfix: reset time length before loading a song from memory
 
 ## Version 1.05
 - bugfix: reset tone when context_reset
