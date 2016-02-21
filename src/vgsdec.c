@@ -642,6 +642,7 @@ static void reset_context(struct _VGSCTX* c)
         c->ch[i].toneS = NULL;
     }
     c->hz = 0;
+    c->timeP = 0;
 }
 
 static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size)

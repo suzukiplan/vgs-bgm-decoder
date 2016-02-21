@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.06
+- bugfix: reset playing time when context_reset
+
 ## Version 1.05
 - bugfix: reset tone when context_reset
 - added KOBUSHI mode
