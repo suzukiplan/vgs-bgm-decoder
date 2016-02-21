@@ -1,6 +1,7 @@
 # Changes
 
 ## Version 1.05
+- bugfix: reset tone when context_reset
 - added KOBUSHI mode
 
 how to use:

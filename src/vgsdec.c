@@ -36,7 +36,6 @@ void* __stdcall vgsdec_create_context()
     pthread_attr_init(&(result->queue.ta));
     pthread_attr_setstacksize(&(result->queue.ta), VGS_STACK_SIZE);
 #endif
-
     return result;
 }
 
@@ -620,6 +619,7 @@ void __stdcall vgsdec_async_stop(void* context)
  */
 static void reset_context(struct _VGSCTX* c)
 {
+    int i;
     c->play = 1;
     c->mask = 0;
     c->mvol = 0;
@@ -636,12 +636,11 @@ static void reset_context(struct _VGSCTX* c)
     memset(c->addKey, 0, sizeof(c->addKey));
     memset(c->addOff, 0, sizeof(c->addOff));
     c->volumeRate = 100;
-    c->ch[0].volumeRate = 100;
-    c->ch[1].volumeRate = 100;
-    c->ch[2].volumeRate = 100;
-    c->ch[3].volumeRate = 100;
-    c->ch[4].volumeRate = 100;
-    c->ch[5].volumeRate = 100;
+    for (i = 0; i < 6; i++) {
+        c->ch[i].volumeRate = 100;
+        c->ch[i].tone = NULL;
+        c->ch[i].toneS = NULL;
+    }
     c->hz = 0;
 }
 
