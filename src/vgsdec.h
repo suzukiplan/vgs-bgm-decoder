@@ -63,6 +63,7 @@
 #define VGSDEC_REG_ADD_KEY_3 0x603
 #define VGSDEC_REG_ADD_KEY_4 0x604
 #define VGSDEC_REG_ADD_KEY_5 0x605
+#define VGSDEC_REG_KOBUSHI 0x700
 
 #ifdef __cplusplus
 extern "C" {

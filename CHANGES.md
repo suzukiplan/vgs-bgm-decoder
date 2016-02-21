@@ -1,5 +1,15 @@
 # Changes
 
+## Version 1.05
+- added KOBUSHI mode
+
+how to use:
+```
+vgsdec_set_value(context, VGSDEC_REG_KOBUSHI, 1);
+```
+
+_Kobushi occurs when the pitch of the singer's voice fluctuates irregularly within one scale degree: This compares with vibrato, which vibrates in a regular cycle._
+
 ## Version 1.04
 - splits the declaration and code in miniz: https://github.com/suzukiplan/vgs-bgm-decoder/issues/31
 

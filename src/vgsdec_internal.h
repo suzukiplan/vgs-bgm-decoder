@@ -47,7 +47,20 @@ struct _NOTE {
 };
 
 struct _PSGCH {
-    short* tone;
+    short* toneS;
+    int* tone;
+    int toneA;
+    int toneR;
+    int* toneM;
+    int toneMA;
+    int toneMR;
+    int toneMAM;
+    int toneMAA;
+    int toneMAI;
+    int toneMP;
+    int toneMPA;
+    int toneMPM;
+    int toneMPI;
     unsigned char vol;
     unsigned char keyOn;
     unsigned char mute;
@@ -98,6 +111,7 @@ struct _VGSCTX {
     unsigned char mask;
     unsigned short mvol;
     unsigned int waitTime;
+    unsigned int hz;
     int wav[6];
     int nidx;
     int stopped;
@@ -142,4 +156,3 @@ static void* async_manager(void* context);
 #endif
 
 #endif
-
