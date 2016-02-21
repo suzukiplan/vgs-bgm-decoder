@@ -1,5 +1,10 @@
 # Changes
 
+## Version 1.06
+- added getter of the KOBUSHI mode
+- bugfix: reset playing time when context_reset
+- bugfix: reset time length before loading a song from memory
+
 ## Version 1.05
 - bugfix: reset tone when context_reset
 - added KOBUSHI mode

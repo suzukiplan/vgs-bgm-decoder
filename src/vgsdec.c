@@ -100,6 +100,8 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
         return -1;
     }
     c->loopIdx = -1;
+    c->timeL = 0;
+    c->timeI = 0;
     for (i = 0; i < c->idxnum; i++) {
         if (NTYPE_WAIT == c->notes[i].type) {
             c->timeL += c->notes[i].val;
@@ -394,6 +396,8 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->addKey[4];
         case VGSDEC_REG_ADD_KEY_5:
             return c->addKey[5];
+        case VGSDEC_REG_KOBUSHI:
+            return c->ch[0].toneM ? 1 : 0;
     }
     return -1;
 }
@@ -477,7 +481,7 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             break;
         case VGSDEC_REG_KOBUSHI:
             if (value) {
-                for (i = 0; i < 6; i++) {
+                for (i = 1; i < 6; i++) {
                     c->ch[i].toneMR = 0;    /* モジュレータ・ラジアン初期値(0固定) */
                     c->ch[i].toneM = S;     /* モジュレータ波形 */
                     c->ch[i].toneMA = 0;    /* モジュレータ・ラジアン加算(A)初期値 */
@@ -638,10 +642,9 @@ static void reset_context(struct _VGSCTX* c)
     c->volumeRate = 100;
     for (i = 0; i < 6; i++) {
         c->ch[i].volumeRate = 100;
-        c->ch[i].tone = NULL;
-        c->ch[i].toneS = NULL;
     }
     c->hz = 0;
+    c->timeP = 0;
 }
 
 static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size)
