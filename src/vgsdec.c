@@ -396,6 +396,8 @@ int __stdcall vgsdec_get_value(void* context, int type)
             return c->addKey[4];
         case VGSDEC_REG_ADD_KEY_5:
             return c->addKey[5];
+        case VGSDEC_REG_KOBUSHI:
+            return c->ch[0].toneM ? 1 : 0;
     }
     return -1;
 }

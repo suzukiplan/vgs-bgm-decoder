@@ -1,6 +1,7 @@
 # Changes
 
 ## Version 1.06
+- added getter of the KOBUSHI mode
 - bugfix: reset playing time when context_reset
 - bugfix: reset time length before loading a song from memory
 
