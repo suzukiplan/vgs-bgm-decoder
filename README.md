@@ -145,7 +145,7 @@ void vgsdec_set_value(void* context, int type, int value);
 |`VGSDEC_REG_KEYON_{0~5}`|o|-|get key-on status of Ch{0~5}: `0` = key-off, `1` = key-on|
 |`VGSDEC_REG_MUTE_{0~5}`|o|o|get or set the mute of Ch{0~5}: `0` = sound, `1` = mute|
 |`VGSDEC_REG_ADD_KEY_{0~5}`|o|o|get or set the [scale up/down](#scale-updown) of Ch{0~5}|
-|`VGSDEC_REG_KOBUSHI`|-|o|set the Kobushi mode: `0' = not kobushi, '1' = kobushi|
+|`VGSDEC_REG_KOBUSHI`|-|o|set the Kobushi mode: `0` = not kobushi, `1` = kobushi|
 
 #### scale value
 |Octave|`A`|`A#`|`B`|`C`|`C#`|`D`|`D#`|`E`|`F`|`F#`|`G`|`G#`|
