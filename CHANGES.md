@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.07
+- bugfix: crush when setting KOBUSHI mode
+
 ## Version 1.06
 - added getter of the KOBUSHI mode
 - bugfix: reset playing time when context_reset

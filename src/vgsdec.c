@@ -117,7 +117,6 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
 {
     struct _VGSCTX* c = (struct _VGSCTX*)context;
     char* buf = (char*)buffer;
-    static int an;
     int i, j;
     int pw;
     int wav;
@@ -481,6 +480,7 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             break;
         case VGSDEC_REG_KOBUSHI:
             if (value) {
+                c->ch[0].toneM = NULL;
                 for (i = 1; i < 6; i++) {
                     c->ch[i].toneMR = 0;    /* モジュレータ・ラジアン初期値(0固定) */
                     c->ch[i].toneM = S;     /* モジュレータ波形 */
@@ -494,7 +494,9 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
                     c->ch[i].toneMPA = 32;  /* モジュレータ・ベロシティ(P)増幅値 */
                 }
             } else {
-                c->ch[i].toneM = NULL;
+                for (i = 0; i < 6; i++) {
+                    c->ch[i].toneM = NULL;
+                }
             }
             break;
     }
