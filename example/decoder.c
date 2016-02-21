@@ -195,10 +195,13 @@ static void dump(void* context)
     /* scale up/down */
     printf("SCALE:");
     for (i = 0; i < 6; i++) {
-        vgsdec_set_value(context, VGSDEC_REG_ADD_KEY_0 + i, -1);
+        // vgsdec_set_value(context, VGSDEC_REG_ADD_KEY_0 + i, -1);
         if (i) printf(",");
         v = vgsdec_get_value(context, VGSDEC_REG_ADD_KEY_0 + i);
         printf(" CH%d=%s%d", i, v < 0 ? "" : "+", v);
     }
     printf("\n");
+
+    /* set KOBUSHI mode */
+    vgsdec_set_value(context, VGSDEC_REG_KOBUSHI, 1);
 }

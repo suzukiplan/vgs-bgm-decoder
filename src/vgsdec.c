@@ -6,6 +6,7 @@
  *----------------------------------------------------------------------------
  */
 #include "vgsdec_internal.h"
+#include "vgstone.h"
 
 #define ROUND(X, MIN, MAX) (X < MIN ? MIN : MAX < X ? MAX : X)
 #ifdef _WIN32
@@ -118,6 +119,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
     int i, j;
     int pw;
     int wav;
+    int fm;
     short* bp;
 
     if (NULL == c || NULL == buf) return;
@@ -144,12 +146,49 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
             }
         }
         if (c->mvol) {
-            for (i = 0; i < (int)size; i += 2) {
+            for (i = 0; i < (int)size; i += 2, c->hz++) {
                 for (j = 0; j < 6; j++) {
-                    if (c->ch[j].tone) {
-                        c->ch[j].cur %= c->ch[j].tone[0];
-                        wav = c->ch[j].tone[1 + c->ch[j].cur];
-                        c->ch[j].cur += 2;
+                    if (c->ch[j].tone || c->ch[j].toneS) {
+                        if (c->ch[j].toneM) {
+                            c->ch[j].toneR += c->ch[j].toneA << 1;
+                            c->ch[j].toneR %= 1128960; /* 4410 * 256 */
+                            fm = c->ch[j].toneR;
+                            if (c->hz % c->ch[j].toneMAI == 0) {
+                                if (c->ch[j].toneMAA < 0) {
+                                    if (c->ch[j].toneMAM < c->ch[j].toneMA) {
+                                        c->ch[j].toneMA += c->ch[j].toneMAA;
+                                    }
+                                } else {
+                                    if (c->ch[j].toneMA < c->ch[j].toneMAM) {
+                                        c->ch[j].toneMA += c->ch[j].toneMAA;
+                                    }
+                                }
+                            }
+                            if (c->hz % c->ch[j].toneMPI == 0) {
+                                if (c->ch[j].toneMPA < 0) {
+                                    if (c->ch[j].toneMPM < c->ch[j].toneMP) {
+                                        c->ch[j].toneMP += c->ch[j].toneMPA;
+                                    }
+                                } else {
+                                    if (c->ch[j].toneMP < c->ch[j].toneMPM) {
+                                        c->ch[j].toneMP += c->ch[j].toneMPA;
+                                    }
+                                }
+                            }
+                            c->ch[j].toneMR += c->ch[j].toneMA << 1;
+                            c->ch[j].toneMR %= 1128960;
+                            fm >>= 8;
+                            fm += (c->ch[j].toneM[c->ch[j].toneMR >> 8] * c->ch[j].toneMP) >> 8;
+                            fm %= 4410;
+                            while (fm < 0) {
+                                fm += 4410;
+                            }
+                            wav = c->ch[j].tone[fm] >> 2;
+                        } else {
+                            c->ch[j].cur %= c->ch[j].toneS[0];
+                            wav = c->ch[j].toneS[1 + c->ch[j].cur];
+                            c->ch[j].cur += 2;
+                        }
                         wav *= (c->ch[j].vol * c->mvol);
                         if (c->ch[j].keyOn) {
                             if (c->ch[j].count < c->ch[j].env1) {
@@ -174,10 +213,11 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                                 wav /= 100;
                             }
                             wav += *bp;
-                            if (32767 < wav)
+                            if (32767 < wav) {
                                 wav = 32767;
-                            else if (wav < -32768)
+                            } else if (wav < -32768) {
                                 wav = -32768;
+                            }
                             if (c->fade2) {
                                 wav *= 100 - c->fade2;
                                 wav /= 100;
@@ -361,6 +401,7 @@ int __stdcall vgsdec_get_value(void* context, int type)
 void __stdcall vgsdec_set_value(void* context, int type, int value)
 {
     struct _VGSCTX* c = (struct _VGSCTX*)context;
+    int i;
 
     if (NULL == c) return;
     lock_context(c);
@@ -433,6 +474,24 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             break;
         case VGSDEC_REG_ADD_KEY_5:
             c->addKey[5] = value;
+            break;
+        case VGSDEC_REG_KOBUSHI:
+            if (value) {
+                for (i = 0; i < 6; i++) {
+                    c->ch[i].toneMR = 0;    /* モジュレータ・ラジアン初期値(0固定) */
+                    c->ch[i].toneM = S;     /* モジュレータ波形 */
+                    c->ch[i].toneMA = 0;    /* モジュレータ・ラジアン加算(A)初期値 */
+                    c->ch[i].toneMAM = 200; /* モジュレータ・ラジアン加算(A)最大値/最小値 */
+                    c->ch[i].toneMAI = 40;  /* モジュレータ・ラジアン加算(A)増幅間隔(Hz) */
+                    c->ch[i].toneMAA = 1;   /* モジュレータ・ラジアン加算(A)増幅値 */
+                    c->ch[i].toneMP = 0;    /* モジュレータ・ベロシティ(P)初期値 */
+                    c->ch[i].toneMPM = 512; /* モジュレータ・ベロシティ(P)最大値/最小値 */
+                    c->ch[i].toneMPI = 12;  /* モジュレータ・ベロシティ(P)増幅間隔(Hz) */
+                    c->ch[i].toneMPA = 32;  /* モジュレータ・ベロシティ(P)増幅値 */
+                }
+            } else {
+                c->ch[i].toneM = NULL;
+            }
             break;
     }
     unlock_context(c);
@@ -560,6 +619,7 @@ void __stdcall vgsdec_async_stop(void* context)
  */
 static void reset_context(struct _VGSCTX* c)
 {
+    int i;
     c->play = 1;
     c->mask = 0;
     c->mvol = 0;
@@ -576,12 +636,12 @@ static void reset_context(struct _VGSCTX* c)
     memset(c->addKey, 0, sizeof(c->addKey));
     memset(c->addOff, 0, sizeof(c->addOff));
     c->volumeRate = 100;
-    c->ch[0].volumeRate = 100;
-    c->ch[1].volumeRate = 100;
-    c->ch[2].volumeRate = 100;
-    c->ch[3].volumeRate = 100;
-    c->ch[4].volumeRate = 100;
-    c->ch[5].volumeRate = 100;
+    for (i = 0; i < 6; i++) {
+        c->ch[i].volumeRate = 100;
+        c->ch[i].tone = NULL;
+        c->ch[i].toneS = NULL;
+    }
+    c->hz = 0;
 }
 
 static size_t extract_meta_data(struct _VGSCTX* c, void* data, size_t size)
@@ -685,19 +745,39 @@ static void unlock_queue(struct _VGSCTX* c)
 static inline void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t, unsigned char n)
 {
     n += c->addKey[cn];
-    switch (t) {
-        case 0: /* SANKAKU */
-            c->ch[cn].tone = TONE1[n % 85];
-            break;
-        case 1: /* NOKOGIR */
-            c->ch[cn].tone = TONE2[n % 85];
-            break;
-        case 2: /* KUKEI */
-            c->ch[cn].tone = TONE3[n % 85];
-            break;
-        default: /* NOIZE */
-            c->ch[cn].tone = TONE4[n % 85];
-            break;
+    if (c->ch[cn].toneM) {
+        c->ch[cn].toneS = NULL;
+        c->ch[cn].toneA = A[n % 88];
+        switch (t) {
+            case 0: /* SANKAKU */
+                c->ch[cn].tone = S;
+                break;
+            case 1: /* NOKOGIR */
+                c->ch[cn].tone = W;
+                break;
+            case 2: /* KUKEI */
+                c->ch[cn].tone = Q;
+                break;
+            default: /* NOIZE */
+                c->ch[cn].tone = N;
+                break;
+        }
+    } else {
+        c->ch[cn].tone = NULL;
+        switch (t) {
+            case 0: /* SANKAKU */
+                c->ch[cn].toneS = TONE1[n % 85];
+                break;
+            case 1: /* NOKOGIR */
+                c->ch[cn].toneS = TONE2[n % 85];
+                break;
+            case 2: /* KUKEI */
+                c->ch[cn].toneS = TONE3[n % 85];
+                break;
+            default: /* NOIZE */
+                c->ch[cn].toneS = TONE4[n % 85];
+                break;
+        }
     }
 }
 
