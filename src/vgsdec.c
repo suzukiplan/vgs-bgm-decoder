@@ -481,7 +481,7 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             break;
         case VGSDEC_REG_KOBUSHI:
             if (value) {
-                for (i = 0; i < 6; i++) {
+                for (i = 1; i < 6; i++) {
                     c->ch[i].toneMR = 0;    /* モジュレータ・ラジアン初期値(0固定) */
                     c->ch[i].toneM = S;     /* モジュレータ波形 */
                     c->ch[i].toneMA = 0;    /* モジュレータ・ラジアン加算(A)初期値 */
