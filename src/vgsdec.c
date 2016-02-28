@@ -154,28 +154,6 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                             c->ch[j].toneR += c->ch[j].toneA << 1;
                             c->ch[j].toneR %= 1128960; /* 4410 * 256 */
                             fm = c->ch[j].toneR;
-                            if (c->hz % c->ch[j].toneMAI == 0) {
-                                if (c->ch[j].toneMAA < 0) {
-                                    if (c->ch[j].toneMAM < c->ch[j].toneMA) {
-                                        c->ch[j].toneMA += c->ch[j].toneMAA;
-                                    }
-                                } else {
-                                    if (c->ch[j].toneMA < c->ch[j].toneMAM) {
-                                        c->ch[j].toneMA += c->ch[j].toneMAA;
-                                    }
-                                }
-                            }
-                            if (c->hz % c->ch[j].toneMPI == 0) {
-                                if (c->ch[j].toneMPA < 0) {
-                                    if (c->ch[j].toneMPM < c->ch[j].toneMP) {
-                                        c->ch[j].toneMP += c->ch[j].toneMPA;
-                                    }
-                                } else {
-                                    if (c->ch[j].toneMP < c->ch[j].toneMPM) {
-                                        c->ch[j].toneMP += c->ch[j].toneMPA;
-                                    }
-                                }
-                            }
                             c->ch[j].toneMR += c->ch[j].toneMA << 1;
                             c->ch[j].toneMR %= 1128960;
                             fm >>= 8;
@@ -482,16 +460,10 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
             if (value) {
                 c->ch[0].toneM = NULL;
                 for (i = 1; i < 6; i++) {
-                    c->ch[i].toneMR = 0;    /* モジュレータ・ラジアン初期値(0固定) */
-                    c->ch[i].toneM = S;     /* モジュレータ波形 */
-                    c->ch[i].toneMA = 0;    /* モジュレータ・ラジアン加算(A)初期値 */
-                    c->ch[i].toneMAM = 200; /* モジュレータ・ラジアン加算(A)最大値/最小値 */
-                    c->ch[i].toneMAI = 40;  /* モジュレータ・ラジアン加算(A)増幅間隔(Hz) */
-                    c->ch[i].toneMAA = 1;   /* モジュレータ・ラジアン加算(A)増幅値 */
-                    c->ch[i].toneMP = 0;    /* モジュレータ・ベロシティ(P)初期値 */
-                    c->ch[i].toneMPM = 512; /* モジュレータ・ベロシティ(P)最大値/最小値 */
-                    c->ch[i].toneMPI = 12;  /* モジュレータ・ベロシティ(P)増幅間隔(Hz) */
-                    c->ch[i].toneMPA = 32;  /* モジュレータ・ベロシティ(P)増幅値 */
+                    c->ch[i].toneMR = 0;   /* モジュレータ・ラジアン初期値(0固定) */
+                    c->ch[i].toneM = S;    /* モジュレータ波形 */
+                    c->ch[i].toneMA = 200; /* モジュレータ・ラジアン加算(A) */
+                    c->ch[i].toneMP = 512; /* モジュレータ・ベロシティ(P) */
                 }
             } else {
                 for (i = 0; i < 6; i++) {

@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.09
+- deleted modulator envelope because unused
+
 ## Version 1.08
 - corrected warning in the 64bit platforms
 

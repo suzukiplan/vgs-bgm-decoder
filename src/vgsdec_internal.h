@@ -54,13 +54,7 @@ struct _PSGCH {
     int* toneM;
     int toneMA;
     int toneMR;
-    int toneMAM;
-    int toneMAA;
-    int toneMAI;
     int toneMP;
-    int toneMPA;
-    int toneMPM;
-    int toneMPI;
     unsigned char vol;
     unsigned char keyOn;
     unsigned char mute;
