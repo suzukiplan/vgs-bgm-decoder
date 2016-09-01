@@ -105,7 +105,8 @@ int __stdcall vgsdec_load_bgm_from_memory(void* context, void* data, size_t size
     for (i = 0; i < c->idxnum; i++) {
         if (NTYPE_WAIT == c->notes[i].type) {
             c->timeL += c->notes[i].val;
-        } else if (NTYPE_LABEL == c->notes[i].type) {
+        }
+        else if (NTYPE_LABEL == c->notes[i].type) {
             c->timeI = c->timeL;
             c->loopIdx = i;
         }
@@ -159,7 +160,8 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                                     if (c->ch[j].toneMAM < c->ch[j].toneMA) {
                                         c->ch[j].toneMA += c->ch[j].toneMAA;
                                     }
-                                } else {
+                                }
+                                else {
                                     if (c->ch[j].toneMA < c->ch[j].toneMAM) {
                                         c->ch[j].toneMA += c->ch[j].toneMAA;
                                     }
@@ -170,7 +172,8 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                                     if (c->ch[j].toneMPM < c->ch[j].toneMP) {
                                         c->ch[j].toneMP += c->ch[j].toneMPA;
                                     }
-                                } else {
+                                }
+                                else {
                                     if (c->ch[j].toneMP < c->ch[j].toneMPM) {
                                         c->ch[j].toneMP += c->ch[j].toneMPA;
                                     }
@@ -184,8 +187,14 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                             while (fm < 0) {
                                 fm += 4410;
                             }
-                            wav = c->ch[j].tone[fm] >> 2;
-                        } else {
+                            if (c->ch[j].tone) {
+                                wav = c->ch[j].tone[fm] >> 2;
+                            }
+                            else {
+                                wav = c->ch[j].toneS[fm] >> 2;
+                            }
+                        }
+                        else {
                             c->ch[j].cur %= c->ch[j].toneS[0];
                             wav = c->ch[j].toneS[1 + c->ch[j].cur];
                             c->ch[j].cur += 2;
@@ -195,14 +204,17 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                             if (c->ch[j].count < c->ch[j].env1) {
                                 c->ch[j].count++;
                                 pw = (c->ch[j].count * 100) / c->ch[j].env1;
-                            } else {
+                            }
+                            else {
                                 pw = 100;
                             }
-                        } else {
+                        }
+                        else {
                             if (c->ch[j].count < c->ch[j].env2) {
                                 c->ch[j].count++;
                                 pw = 100 - (c->ch[j].count * 100) / c->ch[j].env2;
-                            } else {
+                            }
+                            else {
                                 pw = 0;
                             }
                         }
@@ -216,7 +228,8 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                             wav += *bp;
                             if (32767 < wav) {
                                 wav = 32767;
-                            } else if (wav < -32768) {
+                            }
+                            else if (wav < -32768) {
                                 wav = -32768;
                             }
                             if (c->fade2) {
@@ -227,7 +240,8 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                             if (i) {
                                 c->wav[j] += pw < 0 ? -pw : pw;
                                 c->wav[j] >>= 1;
-                            } else {
+                            }
+                            else {
                                 c->wav[j] = pw < 0 ? -pw : pw;
                             }
                         }
@@ -278,7 +292,8 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
                 }
             }
         }
-    } else {
+    }
+    else {
         c->stopped = 1;
     }
     unlock_context(c);
@@ -493,7 +508,8 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
                     c->ch[i].toneMPI = 12;  /* モジュレータ・ベロシティ(P)増幅間隔(Hz) */
                     c->ch[i].toneMPA = 32;  /* モジュレータ・ベロシティ(P)増幅値 */
                 }
-            } else {
+            }
+            else {
                 for (i = 0; i < 6; i++) {
                     c->ch[i].toneM = NULL;
                 }
@@ -577,12 +593,14 @@ int __stdcall vgsdec_async_enqueue(void* context, void* buffer, size_t size, voi
         if (NULL == c->queue.tail) {
             c->queue.head = qdata;
             c->queue.tail = qdata;
-        } else {
+        }
+        else {
             c->queue.tail->next = qdata;
             c->queue.tail = qdata;
         }
         c->queue.count++;
-    } else {
+    }
+    else {
         free(qdata);
     }
     unlock_queue(c);
@@ -767,7 +785,8 @@ static inline void set_note(struct _VGSCTX* c, unsigned char cn, unsigned char t
                 c->ch[cn].tone = N;
                 break;
         }
-    } else {
+    }
+    else {
         c->ch[cn].tone = NULL;
         switch (t) {
             case 0: /* SANKAKU */
@@ -877,12 +896,14 @@ static void* async_manager(void* context)
         lock_queue(c);
         if (0 == c->queue.count) {
             data = NULL;
-        } else {
+        }
+        else {
             data = c->queue.head;
             if (c->queue.head == c->queue.tail) {
                 c->queue.head = NULL;
                 c->queue.tail = NULL;
-            } else {
+            }
+            else {
                 c->queue.head = c->queue.head->next;
             }
             data->next = NULL;

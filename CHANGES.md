@@ -1,5 +1,8 @@
 # Changes
 
+## Version 1.09
+- bugfix: sometime crush if using KOBUSHI mode
+
 ## Version 1.08
 - corrected warning in the 64bit platforms
 
