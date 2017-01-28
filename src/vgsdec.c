@@ -130,7 +130,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
     }
 
     lock_context(c);
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < MAX_VOICE; i++) {
         c->wav[i] = 0;
     }
     if (c->play) {
@@ -149,7 +149,7 @@ void __stdcall vgsdec_execute(void* context, void* buffer, size_t size)
         }
         if (c->mvol) {
             for (i = 0; i < (int)size; i += 2, c->hz++) {
-                for (j = 0; j < 6; j++) {
+                for (j = 0; j < MAX_VOICE; j++) {
                     if (c->ch[j].tone || c->ch[j].toneS) {
                         if (c->ch[j].toneM) {
                             c->ch[j].toneR += c->ch[j].toneA << 1;
@@ -496,7 +496,7 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
         case VGSDEC_REG_KOBUSHI:
             if (value) {
                 c->ch[0].toneM = NULL;
-                for (i = 1; i < 6; i++) {
+                for (i = 1; i < MAX_VOICE; i++) {
                     c->ch[i].toneMR = 0;    /* モジュレータ・ラジアン初期値(0固定) */
                     c->ch[i].toneM = S;     /* モジュレータ波形 */
                     c->ch[i].toneMA = 0;    /* モジュレータ・ラジアン加算(A)初期値 */
@@ -510,7 +510,7 @@ void __stdcall vgsdec_set_value(void* context, int type, int value)
                 }
             }
             else {
-                for (i = 0; i < 6; i++) {
+                for (i = 0; i < MAX_VOICE; i++) {
                     c->ch[i].toneM = NULL;
                 }
             }
@@ -660,7 +660,7 @@ static void reset_context(struct _VGSCTX* c)
     memset(c->addKey, 0, sizeof(c->addKey));
     memset(c->addOff, 0, sizeof(c->addOff));
     c->volumeRate = 100;
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < MAX_VOICE; i++) {
         c->ch[i].volumeRate = 100;
     }
     c->hz = 0;

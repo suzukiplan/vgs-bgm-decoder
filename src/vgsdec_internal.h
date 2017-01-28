@@ -25,6 +25,8 @@
 #define MINIZ_HEADER_FILE_ONLY
 #include "miniz.h"
 
+#define MAX_VOICE 8
+
 #define NTYPE_ENV1 1
 #define NTYPE_ENV2 2
 #define NTYPE_VOL 3
@@ -112,20 +114,20 @@ struct _VGSCTX {
     unsigned short mvol;
     unsigned int waitTime;
     unsigned int hz;
-    int wav[6];
+    int wav[MAX_VOICE];
     int nidx;
     int stopped;
     unsigned int fade;
     unsigned int fcnt;
-    struct _PSGCH ch[6];
+    struct _PSGCH ch[MAX_VOICE];
     int mute;
     int loop;
     int fade2;
     unsigned int timeI;
     unsigned int timeL;
     unsigned int timeP;
-    int addKey[6];
-    int addOff[6];
+    int addKey[MAX_VOICE];
+    int addOff[MAX_VOICE];
     int loopIdx;
     int idxnum;
     int volumeRate;
